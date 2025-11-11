@@ -1,0 +1,67 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper function - check if user is admin
+    function isAdmin() {
+      return request.auth != null && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    
+    // Helper function - check if user is logged in
+    function isLoggedIn() {
+      return request.auth != null;
+    }
+    
+    // Helper function - check if user owns the document
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+    
+    // USERS COLLECTION
+    match /users/{userId} {
+      // Anyone logged in can read user data
+      allow read: if isLoggedIn();
+      
+      // Users can create their own account during registration
+      allow create: if isLoggedIn() && request.auth.uid == userId;
+      
+      // Users can update their own data, admins can update anyone
+      allow update: if isOwner(userId) || isAdmin();
+      
+      // Only admins can delete users
+      allow delete: if isAdmin();
+    }
+    
+    // PETS COLLECTION
+    match /pets/{petId} {
+      // ANYONE can read pets (for guest browsing)
+      allow read: if true;
+      
+      // Only admins can create, update, delete pets
+      allow create, update, delete: if isAdmin();
+    }
+    
+    // ADOPTION REQUESTS COLLECTION
+    match /adoptionRequests/{requestId} {
+      // Users can read their own requests, admins can read all
+      allow read: if isLoggedIn() && 
+                    (resource.data.userId == request.auth.uid || isAdmin());
+      
+      // Logged in users can create adoption requests
+      allow create: if isLoggedIn();
+      
+      // Only admins can update/delete adoption requests
+      allow update, delete: if isAdmin();
+    }
+    
+    // SETTINGS COLLECTION
+    match /settings/{document} {
+      // Anyone can read settings (for app configuration)
+      allow read: if true;
+      
+      // Only admins can modify settings
+      allow write: if isAdmin();
+    }
+  }
+}
