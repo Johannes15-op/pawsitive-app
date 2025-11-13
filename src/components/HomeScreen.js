@@ -15,7 +15,7 @@ import netnetImg from '../assets/pets/Netnet.jpg';
 import natnatImg from '../assets/pets/Natnat.jpg';
 import mateaImg from '../assets/pets/Matea.jpg';
 import joniImg from '../assets/pets/Joni.jpg';
-import jonaImg from '../assets/pets/Jona.jpg';
+import jonaImg from '../assets/pets/Jona.jpg';  
 import pepitaImg from '../assets/pets/Pepita.jpg';
 import lebronImg from '../assets/pets/Lebron.jpg';
 import rondaImg from '../assets/pets/Ronda.jpg';
@@ -68,7 +68,9 @@ const HomeScreen = ({
   setSelectedPet,
   setSelectedSchedule,
   favorites = [],
-  setFavorites = () => {}
+  setFavorites = () => {},
+  previousScreen,
+  setPreviousScreen
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
@@ -177,6 +179,7 @@ const HomeScreen = ({
 
   const handlePetClick = (pet) => {
     setSelectedPet(pet);
+    setPreviousScreen('home');
     setCurrentScreen('petDetail');
     setShowResults(false);
     setSearchQuery('');
@@ -188,8 +191,14 @@ const HomeScreen = ({
       setShowAuthModal(true);
     } else {
       setSelectedPet(pet);
+      setPreviousScreen('home');
       setCurrentScreen('adoptionForm');
     }
+  };
+
+  const handleProfileClick = () => {
+    setPreviousScreen('home');
+    setCurrentScreen('profile');
   };
 
   const toggleFavorite = (e, petId) => {
@@ -259,7 +268,7 @@ const HomeScreen = ({
     <div className="bg-gray-50 min-h-screen pb-24">
       {showAuthModal && <AuthModal />}
 
-      {}
+      {/* Header */}
       <div className="bg-gradient-to-r from-pink-500 to-purple-500 px-4 py-3 flex items-center justify-between shadow-lg sticky top-0 z-50">
         <button onClick={() => setShowSidebar(true)} className="p-2">
           <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -279,7 +288,7 @@ const HomeScreen = ({
           
           {currentUser ? (
             <button 
-              onClick={() => setCurrentScreen('profile')}
+              onClick={handleProfileClick}
               className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center hover:bg-white/30 transition-colors overflow-hidden border-2 border-white"
             >
               {userPhotoURL ? (
@@ -303,7 +312,7 @@ const HomeScreen = ({
         </div>
       </div>
       
-      {}
+      {/* Hero Image */}
       <div className="relative w-full h-72 overflow-hidden">
         <img 
           src={require('../assets/top.jpg')} 
@@ -313,7 +322,7 @@ const HomeScreen = ({
         />
       </div>
 
-     {}
+     {/* Search Bar */}
       <div className="bg-white px-4 py-3 shadow-sm">
         <div className="flex-1 relative">
           <input
@@ -331,7 +340,7 @@ const HomeScreen = ({
         </div>
       </div>
 
-      {}
+      {/* Search Results */}
       {showResults && (
         <div className="bg-white mx-4 mt-2 rounded-lg shadow-lg max-h-96 overflow-y-auto z-50 absolute left-0 right-0">
           {searchResults.length > 0 ? (
@@ -367,9 +376,9 @@ const HomeScreen = ({
         </div>
       )}
       
-     {}
+     {/* Main Content */}
       <div className="p-4">
-        {}
+        {/* Announcement Banner */}
         <AnnouncementBanner />
 
         <div className="bg-pink-100 rounded-lg p-4 mb-4 relative overflow-hidden">
@@ -377,10 +386,10 @@ const HomeScreen = ({
             <Heart className="text-pink-500 fill-current" size={24} />
           </div>
           <h3 className="font-bold text-gray-800 mb-1">The Albay Animal Rescue Alliance</h3>
-          <p className="text-sm text-gray-600 mb-2">Bicolandia’s Voice for the Voiceless</p>
+          <p className="text-sm text-gray-600 mb-2">Bicolandia's Voice for the Voiceless</p>
         </div>
 
-       {}
+       {/* Kapon Schedule Section */}
         <div className="mb-6">
           <h2 className="text-lg font-bold text-gray-800 mb-3">Upcoming Kapon Schedule</h2>
           {kaponLoading ? (
@@ -422,6 +431,7 @@ const HomeScreen = ({
                     <button 
                       onClick={() => {
                         setSelectedSchedule(kapon);
+                        setPreviousScreen('home');
                         setCurrentScreen('kaponForm');
                       }}
                       className="mt-3 w-full bg-pink-500 text-white py-2 rounded text-sm font-semibold hover:bg-pink-600"

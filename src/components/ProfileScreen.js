@@ -7,7 +7,14 @@ import BottomNav from './BottomNav';
 import ProfilePictureUpload from './ProfilePictureUpload';
 import { uploadProfilePicture, deleteProfilePicture } from '../services/imageUploadService';
 
-const ProfileScreen = ({ currentScreen, setCurrentScreen, currentUser, setCurrentUser, userRole }) => {
+const ProfileScreen = ({ 
+  currentScreen, 
+  setCurrentScreen, 
+  currentUser, 
+  setCurrentUser, 
+  userRole,
+  previousScreen = 'home' // Default to home if not provided
+}) => {
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [adoptionCount, setAdoptionCount] = useState(0);
@@ -22,7 +29,7 @@ const ProfileScreen = ({ currentScreen, setCurrentScreen, currentUser, setCurren
         const data = await getCurrentUserData();
         setUserData(data);
 
-        
+        // Fetch adoption count
         try {
           const adoptionsRef = collection(db, 'adoptions');
           const adoptionQuery = query(adoptionsRef, where('userId', '==', currentUser.uid), where('status', '==', 'approved'));
@@ -32,7 +39,7 @@ const ProfileScreen = ({ currentScreen, setCurrentScreen, currentUser, setCurren
           console.error('Error fetching adoptions:', error);
         }
 
-        
+        // Fetch pending volunteer requests count
         try {
           const volunteerRef = collection(db, 'volunteerRequests');
           const volunteerQuery = query(volunteerRef, where('userId', '==', currentUser.uid), where('status', '==', 'pending'));
@@ -55,7 +62,7 @@ const ProfileScreen = ({ currentScreen, setCurrentScreen, currentUser, setCurren
 
   const handlePhotoUpdate = async (file) => {
     if (!file) {
-      
+      // Remove photo
       if (window.confirm('Remove profile picture?')) {
         setIsUploadingPhoto(true);
         const result = await deleteProfilePicture(currentUser.uid);
@@ -70,7 +77,7 @@ const ProfileScreen = ({ currentScreen, setCurrentScreen, currentUser, setCurren
       return;
     }
 
-    
+    // Upload new photo
     setIsUploadingPhoto(true);
     const result = await uploadProfilePicture(currentUser.uid, file);
     
@@ -101,20 +108,43 @@ const ProfileScreen = ({ currentScreen, setCurrentScreen, currentUser, setCurren
     }
   };
 
+  const handleBackClick = () => {
+    setCurrentScreen(previousScreen);
+  };
+
   if (!currentUser) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-lg p-8 text-center max-w-md">
-          <User className="text-gray-300 mx-auto mb-4" size={64} />
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">Not Logged In</h2>
-          <p className="text-gray-600 mb-6">Please login to view your profile</p>
+      <div className="min-h-screen bg-gray-50 pb-20">
+        {/* Header with Back Button for Guests */}
+        <div className="bg-gradient-to-r from-pink-500 to-purple-500 px-4 py-6 text-white">
           <button
-            onClick={() => setCurrentScreen('login')}
-            className="w-full bg-pink-500 text-white py-3 rounded-lg font-semibold hover:bg-pink-600"
+            onClick={handleBackClick}
+            className="mb-4 flex items-center space-x-2 hover:opacity-80 transition-opacity"
           >
-            Login
+            <ArrowLeft size={20} />
+            <span className="text-sm">Back to Browse</span>
           </button>
+          <div className="flex items-center space-x-2">
+            <User className="text-white" size={24} />
+            <span className="font-semibold text-lg text-white">Profile</span>
+          </div>
         </div>
+
+        <div className="flex items-center justify-center p-4 pt-12">
+          <div className="bg-white rounded-2xl shadow-lg p-8 text-center max-w-md w-full">
+            <User className="text-gray-300 mx-auto mb-4" size={64} />
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">Not Logged In</h2>
+            <p className="text-gray-600 mb-6">Please login to view your profile</p>
+            <button
+              onClick={() => setCurrentScreen('login')}
+              className="w-full bg-pink-500 text-white py-3 rounded-lg font-semibold hover:bg-pink-600"
+            >
+              Login
+            </button>
+          </div>
+        </div>
+        
+        <BottomNav currentScreen={currentScreen} setCurrentScreen={setCurrentScreen} />
       </div>
     );
   }
@@ -131,14 +161,14 @@ const ProfileScreen = ({ currentScreen, setCurrentScreen, currentUser, setCurren
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
-      {}
+      {/* Header with Back Button */}
       <div className="bg-gradient-to-r from-pink-500 to-purple-500 px-4 py-6 text-white">
         <button
-          onClick={() => setCurrentScreen('home')}
-          className="mb-4 flex items-center space-x-2 hover:opacity-80"
+          onClick={handleBackClick}
+          className="mb-4 flex items-center space-x-2 hover:opacity-80 transition-opacity"
         >
           <ArrowLeft size={20} />
-          <span className="text-sm">Back</span>
+          <span className="text-sm">Back to {previousScreen === 'home' ? 'Home' : previousScreen === 'favorites' ? 'Favorites' : 'Browse'}</span>
         </button>
         
         <div className="flex items-center space-x-4">
@@ -159,14 +189,14 @@ const ProfileScreen = ({ currentScreen, setCurrentScreen, currentUser, setCurren
         </div>
       </div>
 
-      {}
+      {/* Main Content */}
       <div className="p-4">
-        {}
+        {/* Personal Information Card */}
         <div className="bg-white rounded-lg shadow-sm p-4 mb-4">
           <h2 className="text-lg font-bold text-gray-800 mb-4">Personal Information</h2>
           
           <div className="space-y-4">
-           {}
+           {/* Email */}
             <div className="flex items-start space-x-3">
               <div className="w-10 h-10 bg-pink-100 rounded-full flex items-center justify-center flex-shrink-0">
                 <Mail className="text-pink-500" size={20} />
@@ -177,7 +207,7 @@ const ProfileScreen = ({ currentScreen, setCurrentScreen, currentUser, setCurren
               </div>
             </div>
 
-           {}
+           {/* Phone */}
             <div className="flex items-start space-x-3">
               <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
                 <Phone className="text-blue-500" size={20} />
@@ -188,7 +218,7 @@ const ProfileScreen = ({ currentScreen, setCurrentScreen, currentUser, setCurren
               </div>
             </div>
 
-           {}
+           {/* Address */}
             <div className="flex items-start space-x-3">
               <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
                 <MapPin className="text-green-500" size={20} />
@@ -201,7 +231,7 @@ const ProfileScreen = ({ currentScreen, setCurrentScreen, currentUser, setCurren
           </div>
         </div>
 
-      {}
+      {/* Statistics Cards */}
         <div className="grid grid-cols-2 gap-4 mb-4">
           <div className="bg-white rounded-lg shadow-sm p-4 text-center">
             <Heart className="text-pink-500 mx-auto mb-2" size={32} />
@@ -215,7 +245,7 @@ const ProfileScreen = ({ currentScreen, setCurrentScreen, currentUser, setCurren
           </div>
         </div>
 
-       {}
+       {/* Admin Dashboard Button */}
         {isAdmin && (
           <button
             onClick={() => setCurrentScreen('adminDashboard')}
@@ -226,7 +256,7 @@ const ProfileScreen = ({ currentScreen, setCurrentScreen, currentUser, setCurren
           </button>
         )}
 
-       {}
+       {/* Logout Button */}
         <button
           onClick={handleLogout}
           className="w-full bg-red-500 text-white py-4 rounded-lg font-semibold flex items-center justify-center space-x-2 hover:bg-red-600 transition-colors"
@@ -235,7 +265,7 @@ const ProfileScreen = ({ currentScreen, setCurrentScreen, currentUser, setCurren
           <span>Logout</span>
         </button>
 
-         {}
+         {/* Member Since Info */}
         <div className="mt-4 bg-gray-100 rounded-lg p-4">
           <p className="text-xs text-gray-600 text-center">
             Member since {userData?.createdAt ? new Date(userData.createdAt.toDate()).toLocaleDateString() : 'Unknown'}

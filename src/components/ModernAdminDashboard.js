@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { LogOut, PawPrint, Heart, MessageSquare, Users, BarChart3, Bell, UserCheck, Calendar, Menu, X, DollarSign, ChevronLeft, ChevronRight, User, Eye, CheckCircle, Trash2 } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { LogOut, PawPrint, Heart, MessageSquare, Users, BarChart3, Bell, UserCheck, Calendar, Menu, X, DollarSign, User, Eye, CheckCircle, Trash2 } from 'lucide-react';
 import { signOut } from 'firebase/auth';
 import { auth } from '../config/firebaseConfig';
 import { collection, getDocs, updateDoc, doc, deleteDoc } from 'firebase/firestore';
@@ -20,7 +20,6 @@ import logo from '../assets/image.jpg';
 import headerBg from '../assets/top.jpg';
 import adminProfileImg from '../assets/Maam Edna.jpg';
 
-
 import poknatImg from '../assets/pets/poknat.jpg';
 import netnetImg from '../assets/pets/Netnet.jpg';
 import natnatImg from '../assets/pets/Natnat.jpg';
@@ -38,7 +37,6 @@ import hugoImg from '../assets/pets/Hugo.jpg';
 import dogdogImg from '../assets/pets/Dogdog.jpg';
 import snowImg from '../assets/pets/Snow.jpg';
 import dutchImg from '../assets/pets/Dutch.jpg';
-
 
 const petImages = {
   'poknat.jpg': poknatImg,
@@ -60,7 +58,6 @@ const petImages = {
   'Dutch.jpg': dutchImg
 };
 
-
 const getPetImage = (imageUrl) => {
   if (!imageUrl) return null;
 
@@ -69,10 +66,8 @@ const getPetImage = (imageUrl) => {
     return petImages[filename] || null;
   }
   
-
   return imageUrl;
 };
-
 
 const ManagePets = ({ setCurrentScreen }) => {
   const [pets, setPets] = useState([]);
@@ -185,7 +180,7 @@ const ManagePets = ({ setCurrentScreen }) => {
         </button>
       </div>
       
-      {}
+      {/* Filter buttons */}
       <div className="flex flex-wrap gap-2 mb-6">
         {['all', 'available', 'pending', 'adopted'].map((status) => (
           <button
@@ -202,7 +197,7 @@ const ManagePets = ({ setCurrentScreen }) => {
         ))}
       </div>
 
-      {}
+      {/* Pets grid */}
       {filteredPets.length === 0 ? (
         <div className="text-center py-12">
           <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -222,7 +217,7 @@ const ManagePets = ({ setCurrentScreen }) => {
             
             return (
               <div key={pet.id} className="bg-gray-50 rounded-lg overflow-hidden border border-gray-200">
-               {}
+                {/* Pet image */}
                 <div className="relative h-48 bg-gray-200">
                   {petImageSrc ? (
                     <img 
@@ -244,7 +239,7 @@ const ManagePets = ({ setCurrentScreen }) => {
                   </div>
                 </div>
 
-                {}
+                {/* Pet info */}
                 <div className="p-4">
                   <div className="flex items-start justify-between mb-2">
                     <h3 className="font-bold text-lg text-gray-800">{pet.name}</h3>
@@ -262,7 +257,7 @@ const ManagePets = ({ setCurrentScreen }) => {
                     {pet.neutered && <p className="text-purple-600">✓ Spayed/Neutered</p>}
                   </div>
 
-                 {}
+                  {/* Action buttons */}
                   <div className="flex flex-wrap gap-2">
                     <button
                       onClick={() => {
@@ -298,7 +293,7 @@ const ManagePets = ({ setCurrentScreen }) => {
         </div>
       )}
 
-      {}
+      {/* Pet details modal */}
       {showModal && selectedPet && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
@@ -316,7 +311,7 @@ const ManagePets = ({ setCurrentScreen }) => {
             </div>
             
             <div className="p-6">
-              {}
+              {/* Pet image */}
               <div className="relative h-64 bg-gray-200 rounded-lg overflow-hidden mb-6">
                 {getPetImage(selectedPet.imageUrl) ? (
                   <img 
@@ -338,7 +333,7 @@ const ManagePets = ({ setCurrentScreen }) => {
                 </div>
               </div>
 
-             {}
+              {/* Pet details */}
               <div className="space-y-4">
                 <div className="flex items-start justify-between">
                   <div>
@@ -396,7 +391,7 @@ const ManagePets = ({ setCurrentScreen }) => {
                 )}
               </div>
 
-             {}
+              {/* Modal action buttons */}
               <div className="flex gap-2 mt-6 pt-4 border-t border-gray-200">
                 <button
                   onClick={() => {
@@ -433,7 +428,7 @@ const ManagePets = ({ setCurrentScreen }) => {
 
 const ModernAdminDashboard = ({ setCurrentScreen, currentUser, userRole }) => {
   const [activeTab, setActiveTab] = useState('overview');
-  const [sidebarOpen, setSidebarOpen] = useState(true); 
+  const [sidebarOpen, setSidebarOpen] = useState(false); // Always start closed
   const [stats, setStats] = useState({
     totalPets: 0,
     availablePets: 0,
@@ -446,25 +441,8 @@ const ModernAdminDashboard = ({ setCurrentScreen, currentUser, userRole }) => {
   });
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadDashboardStats();
-  }, []);
-
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth >= 1024) {
-        setSidebarOpen(true);
-      } else {
-        setSidebarOpen(false);
-      }
-    };
-
-    handleResize(); 
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  const loadDashboardStats = async () => {
+  // Wrap loadDashboardStats with useCallback to prevent infinite loops
+  const loadDashboardStats = useCallback(async () => {
     console.log('📊 Loading dashboard stats...');
     setLoading(true);
 
@@ -520,7 +498,14 @@ const ModernAdminDashboard = ({ setCurrentScreen, currentUser, userRole }) => {
     }
     
     setLoading(false);
-  };
+  }, []); // Empty dependency array - function is stable
+
+  useEffect(() => {
+    loadDashboardStats();
+  }, [loadDashboardStats]);
+
+  // Remove the resize effect that auto-opens sidebar on desktop
+  // Sidebar should always start closed and be triggered by menu button
 
   const handleLogout = async () => {
     if (window.confirm('Are you sure you want to logout?')) {
@@ -561,37 +546,46 @@ const ModernAdminDashboard = ({ setCurrentScreen, currentUser, userRole }) => {
     </div>
   );
 
-  const NavButton = ({ icon: Icon, label, tabName, badge }) => (
-    <button
-      onClick={() => {
-        setActiveTab(tabName);
-        if (window.innerWidth < 1024) {
+  const NavButton = ({ icon: Icon, label, tabName, badge }) => {
+    const iconColors = {
+      overview: 'text-purple-500',
+      adoptions: 'text-pink-500',
+      volunteers: 'text-blue-500',
+      kapon: 'text-orange-500',
+      'donation-management': 'text-green-500',
+      pets: 'text-indigo-500',
+      announcements: 'text-gray-500',
+      users: 'text-teal-500'
+    };
+    
+    const iconColor = iconColors[tabName] || 'text-gray-400';
+    
+    return (
+      <button
+        onClick={() => {
+          setActiveTab(tabName);
           setSidebarOpen(false);
-        }
-      }}
-      className={`flex items-center space-x-3 w-full px-4 py-3 rounded-lg transition-all text-sm ${
-        activeTab === tabName
-          ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-md'
-          : 'text-gray-700 hover:bg-gray-100'
-      }`}
-    >
-      <Icon size={20} className="flex-shrink-0" />
-      {sidebarOpen && (
-        <>
-          <span className="font-medium flex-1 text-left min-w-0">{label}</span>
-          {badge && (
-            <span className="ml-auto bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full flex-shrink-0">
-              {badge}
-            </span>
-          )}
-        </>
-      )}
-    </button>
-  );
+        }}
+        className={`flex items-center w-full p-3 rounded-lg transition-colors group ${
+          activeTab === tabName
+            ? 'bg-pink-50 text-pink-600'
+            : 'text-gray-700 hover:bg-pink-50 hover:text-pink-600'
+        }`}
+      >
+        <Icon size={20} className={`mr-3 flex-shrink-0 ${iconColor} group-hover:${iconColor.replace('500', '600')}`} />
+        <span className="font-medium flex-1 text-left">{label}</span>
+        {badge && (
+          <span className="ml-auto bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full flex-shrink-0">
+            {badge}
+          </span>
+        )}
+      </button>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
-     {}
+      {/* Header */}
       <div 
         className="text-white px-6 py-8 shadow-lg relative"
         style={{
@@ -603,10 +597,10 @@ const ModernAdminDashboard = ({ setCurrentScreen, currentUser, userRole }) => {
         <div className="absolute inset-0 bg-gradient-to-r from-pink-500/85 to-purple-500/85"></div>
         
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between relative z-10 gap-4">
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-3 w-full md:w-auto">
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="lg:hidden p-2 hover:bg-white/20 rounded-lg transition-colors"
+              className="p-2 hover:bg-white/20 rounded-lg transition-colors"
             >
               {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
@@ -617,16 +611,14 @@ const ModernAdminDashboard = ({ setCurrentScreen, currentUser, userRole }) => {
               className="w-10 h-10 object-contain flex-shrink-0"
             />
             <div className="min-w-0">
-              <h1 className="text-2xl font-bold text-white truncate">Ednalyn Cristo</h1>
-              <p className="text-white/90 text-sm truncate">Welcome, {currentUser?.displayName || 'Admin'}</p>
+              <h1 className="text-2xl font-bold text-white truncate drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">Ednalyn Cristo</h1>
+              <p className="text-white text-sm truncate drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">Welcome, {currentUser?.displayName || 'Admin'}</p>
             </div>
           </div>
           <button
             onClick={() => {
               setActiveTab('profile');
-              if (window.innerWidth < 1024) {
-                setSidebarOpen(false);
-              }
+              setSidebarOpen(false);
             }}
             className="flex items-center space-x-2 bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg transition-colors flex-shrink-0"
           >
@@ -637,25 +629,43 @@ const ModernAdminDashboard = ({ setCurrentScreen, currentUser, userRole }) => {
       </div>
 
       <div className="flex">
-       {}
+        {/* Backdrop overlay */}
+        <div 
+          className={`fixed inset-0 bg-black z-[60] transition-opacity duration-300 ${
+            sidebarOpen ? 'opacity-50 visible' : 'opacity-0 invisible pointer-events-none'
+          }`}
+          onClick={() => setSidebarOpen(false)}
+        />
+        
+        {/* Sidebar */}
         <div className={`
-          fixed lg:sticky top-0 left-0 h-screen z-40
-          bg-white shadow-lg
-          transition-all duration-300 ease-in-out
-          ${sidebarOpen ? 'w-72' : 'w-20'}
+          fixed left-0 top-0 h-full w-72 bg-white shadow-2xl z-[70] transform transition-transform duration-300 ease-in-out
+          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
         `}>
-          <div className="h-full overflow-y-auto p-5 flex flex-col">
-            <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-200">
-              {sidebarOpen && <h2 className="text-xl font-bold text-gray-800">Navigation</h2>}
-              <button
-                onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="hidden lg:flex p-2 hover:bg-gray-100 rounded-lg ml-auto"
-              >
-                {sidebarOpen ? <ChevronLeft size={20} /> : <ChevronRight size={20} />}
-              </button>
+          <div className="h-full overflow-y-auto flex flex-col">
+            {/* Sidebar Header */}
+            <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-pink-50 to-purple-50">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="w-12 h-12 bg-gradient-to-br from-pink-500 to-purple-500 rounded-full flex items-center justify-center">
+                    <Heart className="text-white fill-white" size={24} />
+                  </div>
+                  <div>
+                    <span className="font-bold text-lg text-gray-800">TAARA</span>
+                    <p className="text-xs text-gray-600">Animal Rescue</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setSidebarOpen(false)}
+                  className="p-2 hover:bg-white rounded-lg transition-colors"
+                >
+                  <X size={20} className="text-gray-600" />
+                </button>
+              </div>
             </div>
             
-            <nav className="space-y-2 flex-1">
+            {/* Navigation Links */}
+            <nav className="p-4 space-y-1 flex-1" style={{ maxHeight: 'calc(100vh - 180px)' }}>
               <NavButton icon={BarChart3} label="Overview" tabName="overview" />
               <NavButton 
                 icon={Heart} 
@@ -685,10 +695,20 @@ const ModernAdminDashboard = ({ setCurrentScreen, currentUser, userRole }) => {
               <NavButton icon={MessageSquare} label="Announcements" tabName="announcements" />
               <NavButton icon={Users} label="Users" tabName="users" />
             </nav>
+
+            {/* Footer */}
+            {sidebarOpen && (
+              <div className="p-4 border-t border-gray-200 bg-gray-50">
+                <div className="text-center">
+                  <p className="text-xs text-gray-600">Tabaco Animal Rescue</p>
+                  <p className="text-xs text-gray-500">& Adoption</p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
-       {}
+        {/* Backdrop overlay */}
         {sidebarOpen && (
           <div
             className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-30"
@@ -696,7 +716,7 @@ const ModernAdminDashboard = ({ setCurrentScreen, currentUser, userRole }) => {
           />
         )}
 
-        {}
+        {/* Main content */}
         <div className="flex-1 p-3 md:p-4 transition-all duration-300 overflow-x-hidden">
           <div className="max-w-full">
             {activeTab === 'overview' && (
@@ -709,7 +729,7 @@ const ModernAdminDashboard = ({ setCurrentScreen, currentUser, userRole }) => {
                   </div>
                 ) : (
                   <>
-                   {}
+                    {/* Stats cards */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6 mb-8">
                       <StatCard
                         icon={PawPrint}
@@ -773,73 +793,71 @@ const ModernAdminDashboard = ({ setCurrentScreen, currentUser, userRole }) => {
                       />
                     </div>
    
-                   {}
+                    {/* Quick actions */}
                     <div className="bg-white rounded-xl shadow-md p-4 md:p-6 mb-8">
-                       <h3 className="text-xl font-bold text-gray-800 mb-6 text-center">Quick Actions</h3>
-                        <div className="flex justify-center">
-                    <div className="grid grid-cols-3 gap-4 max-w-3xl">
-                        {}
-                       <button
+                      <h3 className="text-xl font-bold text-gray-800 mb-6 text-center">Quick Actions</h3>
+                      <div className="flex justify-center">
+                        <div className="grid grid-cols-3 gap-4 max-w-3xl">
+                          <button
                             onClick={() => setCurrentScreen('addPet')}
-                          className="bg-gradient-to-r from-pink-500 to-purple-500 text-white px-6 py-4 rounded-lg font-semibold hover:shadow-lg transition-all text-sm flex flex-col items-center justify-center gap-2 min-h-[100px]"
-                              >
-        <span className="text-2xl">+</span>
-        <span>Add Pet</span>
-      </button>
-      <button
-        onClick={() => setActiveTab('adoptions')}
-        className="bg-gradient-to-r from-orange-500 to-orange-600 text-white px-6 py-4 rounded-lg font-semibold hover:shadow-lg transition-all text-sm flex flex-col items-center justify-center gap-2 min-h-[100px]"
-      >
-        <span className="text-xl">📋</span>
-        <span>Adoptions</span>
-        {stats.pendingAdoptions > 0 && (
-          <span className="text-xs bg-white/20 px-2 py-1 rounded-full">({stats.pendingAdoptions})</span>
-        )}
-      </button>
-      <button
-        onClick={() => setActiveTab('volunteers')}
-        className="bg-gradient-to-r from-teal-500 to-teal-600 text-white px-6 py-4 rounded-lg font-semibold hover:shadow-lg transition-all text-sm flex flex-col items-center justify-center gap-2 min-h-[100px]"
-      >
-        <span className="text-xl">👥</span>
-        <span>Volunteers</span>
-        {stats.pendingVolunteers > 0 && (
-          <span className="text-xs bg-white/20 px-2 py-1 rounded-full">({stats.pendingVolunteers})</span>
-        )}
-      </button>
-      
-      {}
-      <button
-        onClick={() => setActiveTab('kapon')}
-        className="bg-gradient-to-r from-indigo-500 to-indigo-600 text-white px-6 py-4 rounded-lg font-semibold hover:shadow-lg transition-all text-sm flex flex-col items-center justify-center gap-2 min-h-[100px]"
-      >
-        <span className="text-xl">📅</span>
-        <span>Kapon</span>
-        {stats.pendingKaponSchedules > 0 && (
-          <span className="text-xs bg-white/20 px-2 py-1 rounded-full">({stats.pendingKaponSchedules})</span>
-        )}
-      </button>
-      <button
-        onClick={() => setActiveTab('donation-management')}
-        className="bg-gradient-to-r from-yellow-500 to-yellow-600 text-white px-6 py-4 rounded-lg font-semibold hover:shadow-lg transition-all text-sm flex flex-col items-center justify-center gap-2 min-h-[100px]"
-      >
-        <span className="text-xl">💰</span>
-        <span>Donations</span>
-        {stats.pendingDonations > 0 && (
-          <span className="text-xs bg-white/20 px-2 py-1 rounded-full">({stats.pendingDonations})</span>
-        )}
-      </button>
-      <button
-        onClick={() => setActiveTab('announcements')}
-        className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-4 rounded-lg font-semibold hover:shadow-lg transition-all text-sm flex flex-col items-center justify-center gap-2 min-h-[100px]"
-      >
-                          <span className="text-xl">📢</span>
-                         <span>Announcements</span>
+                            className="bg-gradient-to-r from-pink-500 to-purple-500 text-white px-6 py-4 rounded-lg font-semibold hover:shadow-lg transition-all text-sm flex flex-col items-center justify-center gap-2 min-h-[100px]"
+                          >
+                            <span className="text-2xl">+</span>
+                            <span>Add Pet</span>
                           </button>
-                         </div>
+                          <button
+                            onClick={() => setActiveTab('adoptions')}
+                            className="bg-gradient-to-r from-orange-500 to-orange-600 text-white px-6 py-4 rounded-lg font-semibold hover:shadow-lg transition-all text-sm flex flex-col items-center justify-center gap-2 min-h-[100px]"
+                          >
+                            <span className="text-xl">📋</span>
+                            <span>Adoptions</span>
+                            {stats.pendingAdoptions > 0 && (
+                              <span className="text-xs bg-white/20 px-2 py-1 rounded-full">({stats.pendingAdoptions})</span>
+                            )}
+                          </button>
+                          <button
+                            onClick={() => setActiveTab('volunteers')}
+                            className="bg-gradient-to-r from-teal-500 to-teal-600 text-white px-6 py-4 rounded-lg font-semibold hover:shadow-lg transition-all text-sm flex flex-col items-center justify-center gap-2 min-h-[100px]"
+                          >
+                            <span className="text-xl">👥</span>
+                            <span>Volunteers</span>
+                            {stats.pendingVolunteers > 0 && (
+                              <span className="text-xs bg-white/20 px-2 py-1 rounded-full">({stats.pendingVolunteers})</span>
+                            )}
+                          </button>
+                          
+                          <button
+                            onClick={() => setActiveTab('kapon')}
+                            className="bg-gradient-to-r from-indigo-500 to-indigo-600 text-white px-6 py-4 rounded-lg font-semibold hover:shadow-lg transition-all text-sm flex flex-col items-center justify-center gap-2 min-h-[100px]"
+                          >
+                            <span className="text-xl">📅</span>
+                            <span>Kapon</span>
+                            {stats.pendingKaponSchedules > 0 && (
+                              <span className="text-xs bg-white/20 px-2 py-1 rounded-full">({stats.pendingKaponSchedules})</span>
+                            )}
+                          </button>
+                          <button
+                            onClick={() => setActiveTab('donation-management')}
+                            className="bg-gradient-to-r from-yellow-500 to-yellow-600 text-white px-6 py-4 rounded-lg font-semibold hover:shadow-lg transition-all text-sm flex flex-col items-center justify-center gap-2 min-h-[100px]"
+                          >
+                            <span className="text-xl">💰</span>
+                            <span>Donations</span>
+                            {stats.pendingDonations > 0 && (
+                              <span className="text-xs bg-white/20 px-2 py-1 rounded-full">({stats.pendingDonations})</span>
+                            )}
+                          </button>
+                          <button
+                            onClick={() => setActiveTab('announcements')}
+                            className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-4 rounded-lg font-semibold hover:shadow-lg transition-all text-sm flex flex-col items-center justify-center gap-2 min-h-[100px]"
+                          >
+                            <span className="text-xl">📢</span>
+                            <span>Announcements</span>
+                          </button>
                         </div>
-                          </div>
+                      </div>
+                    </div>
 
-                   {}
+                    {/* Notifications */}
                     <div className="space-y-4">
                       {stats.pendingAdoptions > 0 && (
                         <div className="bg-orange-50 border-l-4 border-orange-500 p-4 rounded-lg">
