@@ -180,7 +180,7 @@ const ManagePets = ({ setCurrentScreen }) => {
         </button>
       </div>
       
-      {/* Filter buttons */}
+      {}
       <div className="flex flex-wrap gap-2 mb-6">
         {['all', 'available', 'pending', 'adopted'].map((status) => (
           <button
@@ -197,7 +197,7 @@ const ManagePets = ({ setCurrentScreen }) => {
         ))}
       </div>
 
-      {/* Pets grid */}
+      {}
       {filteredPets.length === 0 ? (
         <div className="text-center py-12">
           <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -217,7 +217,7 @@ const ManagePets = ({ setCurrentScreen }) => {
             
             return (
               <div key={pet.id} className="bg-gray-50 rounded-lg overflow-hidden border border-gray-200">
-                {/* Pet image */}
+                {}
                 <div className="relative h-48 bg-gray-200">
                   {petImageSrc ? (
                     <img 
@@ -239,7 +239,7 @@ const ManagePets = ({ setCurrentScreen }) => {
                   </div>
                 </div>
 
-                {/* Pet info */}
+                {}
                 <div className="p-4">
                   <div className="flex items-start justify-between mb-2">
                     <h3 className="font-bold text-lg text-gray-800">{pet.name}</h3>
@@ -257,7 +257,7 @@ const ManagePets = ({ setCurrentScreen }) => {
                     {pet.neutered && <p className="text-purple-600">✓ Spayed/Neutered</p>}
                   </div>
 
-                  {/* Action buttons */}
+                 {}
                   <div className="flex flex-wrap gap-2">
                     <button
                       onClick={() => {
@@ -293,7 +293,7 @@ const ManagePets = ({ setCurrentScreen }) => {
         </div>
       )}
 
-      {/* Pet details modal */}
+      {}
       {showModal && selectedPet && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
@@ -311,7 +311,7 @@ const ManagePets = ({ setCurrentScreen }) => {
             </div>
             
             <div className="p-6">
-              {/* Pet image */}
+              {}
               <div className="relative h-64 bg-gray-200 rounded-lg overflow-hidden mb-6">
                 {getPetImage(selectedPet.imageUrl) ? (
                   <img 
@@ -333,7 +333,7 @@ const ManagePets = ({ setCurrentScreen }) => {
                 </div>
               </div>
 
-              {/* Pet details */}
+              {}
               <div className="space-y-4">
                 <div className="flex items-start justify-between">
                   <div>
@@ -391,7 +391,7 @@ const ManagePets = ({ setCurrentScreen }) => {
                 )}
               </div>
 
-              {/* Modal action buttons */}
+             {}
               <div className="flex gap-2 mt-6 pt-4 border-t border-gray-200">
                 <button
                   onClick={() => {
@@ -428,7 +428,7 @@ const ManagePets = ({ setCurrentScreen }) => {
 
 const ModernAdminDashboard = ({ setCurrentScreen, currentUser, userRole }) => {
   const [activeTab, setActiveTab] = useState('overview');
-  const [sidebarOpen, setSidebarOpen] = useState(false); // Always start closed
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [stats, setStats] = useState({
     totalPets: 0,
     availablePets: 0,
@@ -441,7 +441,6 @@ const ModernAdminDashboard = ({ setCurrentScreen, currentUser, userRole }) => {
   });
   const [loading, setLoading] = useState(true);
 
-  // Wrap loadDashboardStats with useCallback to prevent infinite loops
   const loadDashboardStats = useCallback(async () => {
     console.log('📊 Loading dashboard stats...');
     setLoading(true);
@@ -498,14 +497,11 @@ const ModernAdminDashboard = ({ setCurrentScreen, currentUser, userRole }) => {
     }
     
     setLoading(false);
-  }, []); // Empty dependency array - function is stable
+  }, []);
 
   useEffect(() => {
     loadDashboardStats();
   }, [loadDashboardStats]);
-
-  // Remove the resize effect that auto-opens sidebar on desktop
-  // Sidebar should always start closed and be triggered by menu button
 
   const handleLogout = async () => {
     if (window.confirm('Are you sure you want to logout?')) {
@@ -585,7 +581,7 @@ const ModernAdminDashboard = ({ setCurrentScreen, currentUser, userRole }) => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
+      {}
       <div 
         className="text-white px-6 py-8 shadow-lg relative"
         style={{
@@ -596,8 +592,8 @@ const ModernAdminDashboard = ({ setCurrentScreen, currentUser, userRole }) => {
       >
         <div className="absolute inset-0 bg-gradient-to-r from-pink-500/85 to-purple-500/85"></div>
         
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between relative z-10 gap-4">
-          <div className="flex items-center space-x-3 w-full md:w-auto">
+        <div className="max-w-7xl mx-auto flex items-center justify-between relative z-10 gap-4">
+          <div className="flex items-center space-x-3 min-w-0 flex-1">
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
               className="p-2 hover:bg-white/20 rounded-lg transition-colors"
@@ -620,16 +616,16 @@ const ModernAdminDashboard = ({ setCurrentScreen, currentUser, userRole }) => {
               setActiveTab('profile');
               setSidebarOpen(false);
             }}
-            className="flex items-center space-x-2 bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg transition-colors flex-shrink-0"
+            className="flex items-center space-x-2 bg-white/30 hover:bg-white/40 px-4 py-2 rounded-lg transition-colors flex-shrink-0 backdrop-blur-sm border border-pink/20"
           >
             <User size={20} />
-            <span className="hidden sm:inline">Profile</span>
+            <span className="hidden sm:inline font-semibold">Profile</span>
           </button>
         </div>
       </div>
 
       <div className="flex">
-        {/* Backdrop overlay */}
+        {}
         <div 
           className={`fixed inset-0 bg-black z-[60] transition-opacity duration-300 ${
             sidebarOpen ? 'opacity-50 visible' : 'opacity-0 invisible pointer-events-none'
@@ -637,18 +633,22 @@ const ModernAdminDashboard = ({ setCurrentScreen, currentUser, userRole }) => {
           onClick={() => setSidebarOpen(false)}
         />
         
-        {/* Sidebar */}
+       {}
         <div className={`
           fixed left-0 top-0 h-full w-72 bg-white shadow-2xl z-[70] transform transition-transform duration-300 ease-in-out
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
         `}>
           <div className="h-full overflow-y-auto flex flex-col">
-            {/* Sidebar Header */}
+            {}
             <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-pink-50 to-purple-50">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
-                  <div className="w-12 h-12 bg-gradient-to-br from-pink-500 to-purple-500 rounded-full flex items-center justify-center">
-                    <Heart className="text-white fill-white" size={24} />
+                  <div className="w-12 h-12 rounded-full overflow-hidden flex items-center justify-center bg-white shadow-sm">
+                    <img 
+                      src={logo} 
+                      alt="TAARA Logo" 
+                      className="w-full h-full object-cover"
+                    />
                   </div>
                   <div>
                     <span className="font-bold text-lg text-gray-800">TAARA</span>
@@ -664,15 +664,9 @@ const ModernAdminDashboard = ({ setCurrentScreen, currentUser, userRole }) => {
               </div>
             </div>
             
-            {/* Navigation Links */}
+            {}
             <nav className="p-4 space-y-1 flex-1" style={{ maxHeight: 'calc(100vh - 180px)' }}>
               <NavButton icon={BarChart3} label="Overview" tabName="overview" />
-              <NavButton 
-                icon={Heart} 
-                label="Adoption Requests" 
-                tabName="adoptions"
-                badge={stats.pendingAdoptions > 0 ? stats.pendingAdoptions : null}
-              />
               <NavButton 
                 icon={UserCheck} 
                 label="Volunteer Requests" 
@@ -696,7 +690,7 @@ const ModernAdminDashboard = ({ setCurrentScreen, currentUser, userRole }) => {
               <NavButton icon={Users} label="Users" tabName="users" />
             </nav>
 
-            {/* Footer */}
+           {}
             {sidebarOpen && (
               <div className="p-4 border-t border-gray-200 bg-gray-50">
                 <div className="text-center">
@@ -708,20 +702,14 @@ const ModernAdminDashboard = ({ setCurrentScreen, currentUser, userRole }) => {
           </div>
         </div>
 
-        {/* Backdrop overlay */}
-        {sidebarOpen && (
-          <div
-            className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-30"
-            onClick={() => setSidebarOpen(false)}
-          />
-        )}
-
-        {/* Main content */}
+        {}
         <div className="flex-1 p-3 md:p-4 transition-all duration-300 overflow-x-hidden">
           <div className="max-w-full">
             {activeTab === 'overview' && (
               <div>
-                <h2 className="text-2xl font-bold text-gray-800 mb-6">Dashboard Overview</h2>
+                <div className="flex items-center gap-3 mb-6">
+                  <h2 className="text-2xl font-bold text-gray-800">Dashboard Overview</h2>
+                </div>
                 
                 {loading ? (
                   <div className="flex items-center justify-center h-64">
@@ -729,7 +717,7 @@ const ModernAdminDashboard = ({ setCurrentScreen, currentUser, userRole }) => {
                   </div>
                 ) : (
                   <>
-                    {/* Stats cards */}
+                    {}
                     <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6 mb-8">
                       <StatCard
                         icon={PawPrint}
@@ -793,7 +781,7 @@ const ModernAdminDashboard = ({ setCurrentScreen, currentUser, userRole }) => {
                       />
                     </div>
    
-                    {/* Quick actions */}
+                   {}
                     <div className="bg-white rounded-xl shadow-md p-4 md:p-6 mb-8">
                       <h3 className="text-xl font-bold text-gray-800 mb-6 text-center">Quick Actions</h3>
                       <div className="flex justify-center">
@@ -857,7 +845,7 @@ const ModernAdminDashboard = ({ setCurrentScreen, currentUser, userRole }) => {
                       </div>
                     </div>
 
-                    {/* Notifications */}
+                    {}
                     <div className="space-y-4">
                       {stats.pendingAdoptions > 0 && (
                         <div className="bg-orange-50 border-l-4 border-orange-500 p-4 rounded-lg">
@@ -944,21 +932,190 @@ const ModernAdminDashboard = ({ setCurrentScreen, currentUser, userRole }) => {
               </div>
             )}
 
-            {activeTab === 'adoptions' && <AdoptionRequestsAdmin />}
-            {activeTab === 'volunteers' && <VolunteerRequestsAdmin />}
-            {activeTab === 'kapon' && <KaponScheduleAdmin />}
-            {activeTab === 'donation-management' && (
-              <DonationManagementAdmin onUpdate={loadDashboardStats} />
+            {activeTab === 'adoptions' && (
+              <>
+                <div className="flex items-center gap-3 mb-6">
+                  <button
+                    onClick={() => setActiveTab('overview')}
+                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors flex items-center gap-2 text-gray-600 hover:text-gray-800"
+                    title="Back to Overview"
+                  >
+                    <svg 
+                      width="20" 
+                      height="20" 
+                      viewBox="0 0 24 24" 
+                      fill="none" 
+                      stroke="currentColor" 
+                      strokeWidth="2" 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round"
+                    >
+                      <path d="M19 12H5M12 19l-7-7 7-7"/>
+                    </svg>
+                  </button>
+                  <h2 className="text-2xl font-bold text-gray-800">Adoption Requests</h2>
+                </div>
+                <AdoptionRequestsAdmin />
+              </>
             )}
-            {activeTab === 'users' && <UserManagementAdmin />}
+
+            {activeTab === 'volunteers' && (
+              <>
+                <div className="flex items-center gap-3 mb-6">
+                  <button
+                    onClick={() => setActiveTab('overview')}
+                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors flex items-center gap-2 text-gray-600 hover:text-gray-800"
+                    title="Back to Overview"
+                  >
+                    <svg 
+                      width="20" 
+                      height="20" 
+                      viewBox="0 0 24 24" 
+                      fill="none" 
+                      stroke="currentColor" 
+                      strokeWidth="2" 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round"
+                    >
+                      <path d="M19 12H5M12 19l-7-7 7-7"/>
+                    </svg>
+                  </button>
+                  <h2 className="text-2xl font-bold text-gray-800">Volunteer Requests</h2>
+                </div>
+                <VolunteerRequestsAdmin />
+              </>
+            )}
+
+            {activeTab === 'kapon' && (
+              <>
+                <div className="flex items-center gap-3 mb-6">
+                  <button
+                    onClick={() => setActiveTab('overview')}
+                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors flex items-center gap-2 text-gray-600 hover:text-gray-800"
+                    title="Back to Overview"
+                  >
+                    <svg 
+                      width="20" 
+                      height="20" 
+                      viewBox="0 0 24 24" 
+                      fill="none" 
+                      stroke="currentColor" 
+                      strokeWidth="2" 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round"
+                    >
+                      <path d="M19 12H5M12 19l-7-7 7-7"/>
+                    </svg>
+                  </button>
+                  <h2 className="text-2xl font-bold text-gray-800">Kapon Schedule</h2>
+                </div>
+                <KaponScheduleAdmin />
+              </>
+            )}
+
+            {activeTab === 'donation-management' && (
+              <>
+                <div className="flex items-center gap-3 mb-6">
+                  <button
+                    onClick={() => setActiveTab('overview')}
+                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors flex items-center gap-2 text-gray-600 hover:text-gray-800"
+                    title="Back to Overview"
+                  >
+                    <svg 
+                      width="20" 
+                      height="20" 
+                      viewBox="0 0 24 24" 
+                      fill="none" 
+                      stroke="currentColor" 
+                      strokeWidth="2" 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round"
+                    >
+                      <path d="M19 12H5M12 19l-7-7 7-7"/>
+                    </svg>
+                  </button>
+                  <h2 className="text-2xl font-bold text-gray-800">Donation Management</h2>
+                </div>
+                <DonationManagementAdmin onUpdate={loadDashboardStats} />
+              </>
+            )}
+
+            {activeTab === 'users' && (
+              <>
+                <div className="flex items-center gap-3 mb-6">
+                  <button
+                    onClick={() => setActiveTab('overview')}
+                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors flex items-center gap-2 text-gray-600 hover:text-gray-800"
+                    title="Back to Overview"
+                  >
+                    <svg 
+                      width="20" 
+                      height="20" 
+                      viewBox="0 0 24 24" 
+                      fill="none" 
+                      stroke="currentColor" 
+                      strokeWidth="2" 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round"
+                    >
+                      <path d="M19 12H5M12 19l-7-7 7-7"/>
+                    </svg>
+                  </button>
+                  <h2 className="text-2xl font-bold text-gray-800">User Management</h2>
+                </div>
+                <UserManagementAdmin />
+              </>
+            )}
 
             {activeTab === 'pets' && (
-              <ManagePets setCurrentScreen={setCurrentScreen} />
+              <>
+                <div className="flex items-center gap-3 mb-6">
+                  <button
+                    onClick={() => setActiveTab('overview')}
+                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors flex items-center gap-2 text-gray-600 hover:text-gray-800"
+                    title="Back to Overview"
+                  >
+                    <svg 
+                      width="20" 
+                      height="20" 
+                      viewBox="0 0 24 24" 
+                      fill="none" 
+                      stroke="currentColor" 
+                      strokeWidth="2" 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round"
+                    >
+                      <path d="M19 12H5M12 19l-7-7 7-7"/>
+                    </svg>
+                  </button>
+                </div>
+                <ManagePets setCurrentScreen={setCurrentScreen} />
+              </>
             )}
 
             {activeTab === 'announcements' && (
               <div className="bg-white rounded-xl shadow-md p-4 md:p-6">
-                <h2 className="text-2xl font-bold text-gray-800 mb-4">Announcements</h2>
+                <div className="flex items-center gap-3 mb-4">
+                  <button
+                    onClick={() => setActiveTab('overview')}
+                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors flex items-center gap-2 text-gray-600 hover:text-gray-800"
+                    title="Back to Overview"
+                  >
+                    <svg 
+                      width="20" 
+                      height="20" 
+                      viewBox="0 0 24 24" 
+                      fill="none" 
+                      stroke="currentColor" 
+                      strokeWidth="2" 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round"
+                    >
+                      <path d="M19 12H5M12 19l-7-7 7-7"/>
+                    </svg>
+                  </button>
+                  <h2 className="text-2xl font-bold text-gray-800">Announcements</h2>
+                </div>
                 <p className="text-gray-600 mb-4">Create and manage announcements.</p>
                 <button
                   onClick={() => setCurrentScreen('createAnnouncement')}
@@ -971,7 +1128,27 @@ const ModernAdminDashboard = ({ setCurrentScreen, currentUser, userRole }) => {
 
             {activeTab === 'profile' && (
               <div className="bg-white rounded-xl shadow-md p-4 md:p-6">
-                <h2 className="text-2xl font-bold text-gray-800 mb-6">Admin Profile</h2>
+                <div className="flex items-center gap-3 mb-6">
+                  <button
+                    onClick={() => setActiveTab('overview')}
+                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors flex items-center gap-2 text-gray-600 hover:text-gray-800"
+                    title="Back to Overview"
+                  >
+                    <svg 
+                      width="20" 
+                      height="20" 
+                      viewBox="0 0 24 24" 
+                      fill="none" 
+                      stroke="currentColor" 
+                      strokeWidth="2" 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round"
+                    >
+                      <path d="M19 12H5M12 19l-7-7 7-7"/>
+                    </svg>
+                  </button>
+                  <h2 className="text-2xl font-bold text-gray-800">Admin Profile</h2>
+                </div>
                 
                 <div className="max-w-2xl mx-auto">
                   <div className="flex items-center justify-center mb-8">
@@ -1080,3 +1257,4 @@ const ModernAdminDashboard = ({ setCurrentScreen, currentUser, userRole }) => {
 };
 
 export default ModernAdminDashboard;
+

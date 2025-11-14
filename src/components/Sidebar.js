@@ -1,5 +1,8 @@
 import React from 'react';
-import { Heart, Home, User, DollarSign, Users, Calendar, FileText, Info, X } from 'lucide-react';
+import {Home, User, DollarSign, Users, Calendar, FileText, Info, X } from 'lucide-react';
+
+
+import logoImg from '../assets/image.jpg'; 
 
 const Sidebar = ({ showSidebar, setShowSidebar, setCurrentScreen }) => {
   const handleNavigation = (screen) => {
@@ -9,7 +12,7 @@ const Sidebar = ({ showSidebar, setShowSidebar, setCurrentScreen }) => {
 
   return (
     <>
-      {/* Backdrop overlay - increased z-index */}
+      {}
       <div 
         className={`fixed inset-0 bg-black z-[60] transition-opacity duration-300 ${
           showSidebar ? 'opacity-50 visible' : 'opacity-0 invisible pointer-events-none'
@@ -17,18 +20,23 @@ const Sidebar = ({ showSidebar, setShowSidebar, setCurrentScreen }) => {
         onClick={() => setShowSidebar(false)}
       />
       
-      {/* Sidebar - increased z-index to be above everything */}
+      {}
       <div 
         className={`fixed left-0 top-0 h-full w-72 bg-white shadow-2xl z-[70] transform transition-transform duration-300 ease-in-out ${
           showSidebar ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        {/* Header */}
+        {}
         <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-pink-50 to-purple-50">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <div className="w-12 h-12 bg-gradient-to-br from-pink-500 to-purple-500 rounded-full flex items-center justify-center">
-                <Heart className="text-white fill-white" size={24} />
+             {}
+              <div className="w-12 h-12 rounded-full overflow-hidden flex items-center justify-center bg-white shadow-sm">
+                <img 
+                  src={logoImg} 
+                  alt="TAARA Logo" 
+                  className="w-full h-full object-cover"
+                />
               </div>
               <div>
                 <span className="font-bold text-lg text-gray-800">TAARA</span>
@@ -44,7 +52,7 @@ const Sidebar = ({ showSidebar, setShowSidebar, setCurrentScreen }) => {
           </div>
         </div>
 
-        {/* Navigation Links */}
+        {}
         <nav className="p-4 space-y-1 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 180px)' }}>
           <button 
             onClick={() => handleNavigation('home')}
@@ -103,7 +111,7 @@ const Sidebar = ({ showSidebar, setShowSidebar, setCurrentScreen }) => {
           </button>
         </nav>
 
-        {/* Footer */}
+        {}
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200 bg-gray-50">
           <div className="text-center">
             <p className="text-xs text-gray-600">Tabaco Animal Rescue</p>
