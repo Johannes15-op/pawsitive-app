@@ -1,31 +1,22 @@
 {
-  "name": "functions",
-  "description": "Cloud Functions for Firebase",
+  "name": "taara-backend",
+  "version": "1.0.0",
+  "description": "TAARA Pet Adoption Backend - SMS Service",
+  "main": "server.js",
   "scripts": {
-    "lint": "eslint .",
-    "serve": "firebase emulators:start --only functions",
-    "shell": "firebase functions:shell",
-    "start": "npm run shell",
-    "deploy": "firebase deploy --only functions",
-    "logs": "firebase functions:log"
+    "start": "node server.js",
+    "dev": "nodemon server.js"
   },
-  "engines": {
-    "node": "22"
-  },
-  "main": "index.js",
+  "keywords": ["sms", "iprog", "pet-adoption"],
+  "author": "",
+  "license": "ISC",
   "dependencies": {
+    "axios": "^1.6.0",
     "cors": "^2.8.5",
-    "dotenv": "^17.2.3",
-    "express": "^5.1.0",
-    "firebase-admin": "^12.6.0",
-    "firebase-functions": "^6.0.1",
-    "node-fetch": "^2.7.0",
-    "twilio": "^5.10.4"
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2"
   },
   "devDependencies": {
-    "eslint": "^8.15.0",
-    "eslint-config-google": "^0.14.0",
-    "firebase-functions-test": "^3.1.0"
-  },
-  "private": true
+    "nodemon": "^3.0.1"
+  }
 }

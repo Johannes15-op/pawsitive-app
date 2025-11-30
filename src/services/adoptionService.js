@@ -38,39 +38,36 @@ const adoptionService = {
       
       console.log('✅ Adoption submitted successfully with ID:', docRef.id);
       
-      // ============================================
-      // NOTIFY BACKEND TO SEND SMS
-      // ============================================
-      try {
-        console.log('📱 Notifying backend to send SMS...');
-        
-        const response = await fetch(`${API_URL}/api/sms/adoption-request`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            adoptionId: docRef.id,
-            petName: adoptionData.petName,
-            petBreed: adoptionData.petBreed,
-            adopterName: adoptionData.fullName,
-            adopterPhone: adoptionData.phoneNumber,
-            adopterContact: adoptionData.phoneNumber
-          })
-        });
-        
-        const result = await response.json();
-        
-        if (result.success) {
-          console.log('✅ SMS notification sent to admin successfully');
-        } else {
-          console.warn('⚠️ SMS notification failed:', result.error);
-        }
-      } catch (smsError) {
-        // Don't fail adoption if SMS fails
-        console.error('⚠️ SMS notification error (non-critical):', smsError.message);
-      }
-      // ============================================
+   
+try {
+  console.log('📱 Notifying backend to send SMS...');
+  
+  const response = await fetch(`${API_URL}/api/sms/adoption-notification`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      ownerPhone: '09936639774', 
+      petName: adoptionData.petName,
+      adopterName: adoptionData.fullName,
+      adopterContact: adoptionData.phoneNumber,
+      adoptionId: docRef.id
+    })
+  });
+  
+  const result = await response.json();
+  
+  if (result.success) {
+    console.log('✅ SMS notification sent to owner successfully');
+  } else {
+    console.warn('⚠️ SMS notification failed:', result.error);
+  }
+} catch (smsError) {
+ 
+  console.error('⚠️ SMS notification error (non-critical):', smsError.message);
+}
+
       
       return {
         success: true,

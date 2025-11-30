@@ -25,6 +25,7 @@ import CreateAnnouncementScreen from './components/CreateAnnouncementScreen';
 import Sidebar from './components/Sidebar';
 import KaponSchedule from './components/KaponSchedule';
 import KaponForm from './components/KaponForm';
+import TestSMS from './components/TestSMS';
 
 const App = () => {
   const [currentScreen, setCurrentScreen] = useState('loading');
@@ -121,6 +122,7 @@ const App = () => {
       }
     }
   }, [currentScreen, userRole]);
+  
   const handleDonationSubmit = async (donationData) => {
     console.log('=== APP.JS: handleDonationSubmit START ===');
     console.log('📤 Received donation data:', donationData);
@@ -352,6 +354,13 @@ const App = () => {
             setSelectedPet={setSelectedPet}
             favorites={favorites}
             setFavorites={setFavorites}
+          />
+        );
+        
+      case 'testSMS':
+        return (
+          <TestSMS 
+            setCurrentScreen={setCurrentScreen}
           />
         );
         
