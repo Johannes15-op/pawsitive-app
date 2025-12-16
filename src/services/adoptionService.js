@@ -1,7 +1,7 @@
 import { collection, addDoc, Timestamp, query, where, getDocs, updateDoc, doc, getDoc } from 'firebase/firestore';
 import { db } from '../config/firebaseConfig';
 
-// Backend API URL - adjust if needed
+
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
 const adoptionService = {
@@ -12,25 +12,25 @@ const adoptionService = {
       const adoptionsRef = collection(db, 'adoptions');
       
       const docRef = await addDoc(adoptionsRef, {
-        // User information
+      
         userId: adoptionData.userId,
         userEmail: adoptionData.userEmail,
         fullName: adoptionData.fullName,
         phoneNumber: adoptionData.phoneNumber,
         
-        // Pet information
+      
         petId: adoptionData.petId,
         petName: adoptionData.petName,
         petBreed: adoptionData.petBreed,
         petAge: adoptionData.petAge,
         
-        // Application details
+
         address: adoptionData.address,
         reason: adoptionData.reason,
         hasExperience: adoptionData.hasExperience,
         hasOtherPets: adoptionData.hasOtherPets,
         
-        // Status tracking
+     
         status: 'pending', 
         createdAt: Timestamp.fromDate(new Date()),
         updatedAt: Timestamp.fromDate(new Date())
@@ -162,7 +162,7 @@ try {
     try {
       console.log('🔄 Updating adoption status:', { adoptionId, newStatus });
 
-      // Get adoption document
+
       const adoptionDocRef = doc(db, 'adoptions', adoptionId);
       const adoptionSnap = await getDoc(adoptionDocRef);
       
@@ -175,7 +175,7 @@ try {
 
       console.log('📋 Adoption data:', { petId, petName: adoptionData.petName });
 
-      // Update adoption status
+   
       await updateDoc(adoptionDocRef, {
         status: newStatus,
         updatedAt: Timestamp.fromDate(new Date()),
@@ -185,9 +185,7 @@ try {
 
       console.log('✅ Adoption status updated to:', newStatus);
 
-      // ============================================
-      // NOTIFY BACKEND TO SEND SMS
-      // ============================================
+      
       try {
         const adopterPhone = adoptionData.phoneNumber;
         
@@ -222,9 +220,7 @@ try {
       } catch (smsError) {
         console.error('⚠️ SMS notification error (non-critical):', smsError.message);
       }
-      // ============================================
-
-      // Update pet status if approved
+  
       if (newStatus === 'approved' && petId) {
         try {
           const petDocRef = doc(db, 'pets', petId);
@@ -239,7 +235,6 @@ try {
         }
       }
 
-      // Update pet status if rejected
       if (newStatus === 'rejected' && petId) {
         try {
           const petDocRef = doc(db, 'pets', petId);
