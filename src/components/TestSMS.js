@@ -6,7 +6,7 @@ const TestSMS = () => {
   const [result, setResult] = useState(null);
   const [balance, setBalance] = useState(null);
   const [formData, setFormData] = useState({
-    ownerPhone: '09936639774',  // Pet owner's phone
+    ownerPhone: '09936639774', 
     petName: 'Brownie',
     adopterName: 'Test Adopter',
     adopterPhone: '09171234567',
