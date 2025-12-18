@@ -17,7 +17,7 @@ const CreateAdminAccount = ({ setCurrentScreen }) => {
       password: 'admin123',
       fullName: 'TAARA admin',
       role: 'Admin',
-      phoneNumber: '+639928129654',
+      phoneNumber: '+639936639774',
       address: 'P3 Burak Street Tabaco City'
     };
 

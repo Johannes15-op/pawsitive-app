@@ -35,13 +35,13 @@ class SMSService {
     return cleaned;
   }
 
-  // Clean message to ensure proper encoding
+
   cleanMessage(message) {
-    // Remove emojis and special characters that might cause issues
+ 
     return message
-      .replace(/[\u{1F300}-\u{1F9FF}]/gu, '') // Remove emojis
-      .replace(/[\u{2600}-\u{26FF}]/gu, '')   // Remove misc symbols
-      .replace(/[\u{2700}-\u{27BF}]/gu, '')   // Remove dingbats
+      .replace(/[\u{1F300}-\u{1F9FF}]/gu, '') 
+      .replace(/[\u{2600}-\u{26FF}]/gu, '')  
+      .replace(/[\u{2700}-\u{27BF}]/gu, '')   
       .trim();
   }
 
@@ -53,7 +53,7 @@ class SMSService {
         throw new Error('Invalid phone number');
       }
 
-      // Clean the message
+
       const cleanedMessage = this.cleanMessage(message);
 
       console.log('📱 Sending SMS via iProg...');
@@ -74,7 +74,7 @@ class SMSService {
         };
       }
 
-      // Try iProg API with proper encoding
+ 
       const response = await axios.post(
         'https://sms.iprogtech.com/api/v1/sms_messages',
         null,
@@ -82,7 +82,7 @@ class SMSService {
           params: {
             api_token: iprogConfig.apiKey,
             phone_number: formattedPhone,
-            message: cleanedMessage, // Use cleaned message
+            message: cleanedMessage, 
             sender_name: iprogConfig.senderName || iprogConfig.senderId || 'TAARA'
           },
           headers: {
@@ -96,7 +96,7 @@ class SMSService {
       if (response.data.status === 200 || response.data.status === 'success') {
         console.log('✅ SMS queued successfully via iProg!');
         
-        // Check delivery status after 10 seconds
+      
         const messageId = response.data.message_id;
         if (messageId) {
           console.log('⏱️  Will check delivery status in 10 seconds...');
@@ -180,7 +180,7 @@ class SMSService {
     adoptionId
   }) {
     try {
-      // Simple, clean message without special characters
+      
       const message = `TAARA ADOPTION ALERT
 Pet: ${petName}
 Adopter: ${adopterName}
