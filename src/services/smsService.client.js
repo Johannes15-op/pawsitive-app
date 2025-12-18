@@ -29,9 +29,7 @@ const smsService = {
     }
   },
 
-  /**
-   * Send approval notification SMS
-   */
+
   async sendApprovalNotification(data) {
     try {
       console.log('📤 Sending approval notification...', data);
@@ -59,9 +57,7 @@ const smsService = {
     }
   },
 
-  /**
-   * Send rejection notification SMS
-   */
+
   async sendRejectionNotification(data) {
     try {
       console.log('📤 Sending rejection notification...', data);
@@ -89,9 +85,7 @@ const smsService = {
     }
   },
 
-  /**
-   * Check SMS credits balance
-   */
+  
   async checkBalance() {
     try {
       const response = await fetch(`${API_URL}/sms/balance`, {

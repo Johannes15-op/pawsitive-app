@@ -4,7 +4,7 @@ const fetch = require("node-fetch");
 
 admin.initializeApp();
 
-// Get API key from environment variable
+
 const IPROG_API_KEY = process.env.IPROG_API_KEY;
 
 exports.sendAdoptionSMS = functions.https.onCall(async (data, context) => {
@@ -13,7 +13,6 @@ exports.sendAdoptionSMS = functions.https.onCall(async (data, context) => {
   console.log("🔔 Cloud Function called with:",
       {to, messageLength: message?.length});
 
-  // Validate input
   if (!to || !message) {
     console.error("❌ Missing required fields:",
         {to: !!to, message: !!message});
@@ -32,12 +31,11 @@ exports.sendAdoptionSMS = functions.https.onCall(async (data, context) => {
   }
 
   try {
-    // Clean phone number (remove +63 or +)
+  
     const cleanNumber = to.replace(/^\+?63/, "0").replace(/^\+/, "");
 
     console.log("📤 Sending SMS to:", cleanNumber);
 
-    // Call iProg API
     const apiUrl = `https://sms.iprogtech.com/api/v1/sms_messages?` +
         `api_token=${IPROG_API_KEY}&` +
         `message=${encodeURIComponent(message)}&` +
@@ -64,7 +62,6 @@ exports.sendAdoptionSMS = functions.https.onCall(async (data, context) => {
       throw new Error(errorMsg);
     }
 
-    // Log to Firestore
     await admin.firestore().collection("smsLogs").add({
       recipientPhone: cleanNumber,
       message: message,
@@ -81,7 +78,7 @@ exports.sendAdoptionSMS = functions.https.onCall(async (data, context) => {
     console.error("❌ SMS Error:", error.message);
     console.error("❌ Stack:", error.stack);
 
-    // Log error to Firestore
+  
     try {
       await admin.firestore().collection("smsLogs").add({
         recipientPhone: to,

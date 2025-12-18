@@ -20,6 +20,10 @@ app.use((req, res, next) => {
 const smsRoutes = require('./routes/smsRoutes');
 app.use('/api/sms', smsRoutes);
 
+// ADD THIS - Adoption routes
+const adoptionRoutes = require('./routes/adoptionRoutes');
+app.use('/api/adoptions', adoptionRoutes);
+
 app.get('/api/health', (req, res) => {
   res.json({ 
     status: 'ok', 
@@ -35,7 +39,8 @@ app.get('/', (req, res) => {
     endpoints: {
       health: '/api/health',
       smsTest: '/api/sms/test',
-      sendSMS: '/api/sms/adoption-notification'
+      sendSMS: '/api/sms/adoption-notification',
+      createAdoption: '/api/adoptions'  // ADD THIS
     }
   });
 });
@@ -58,5 +63,6 @@ app.listen(PORT, () => {
   console.log(`📡 Server running on: http://localhost:${PORT}`);
   console.log(`🏥 Health check: http://localhost:${PORT}/api/health`);
   console.log(`🧪 SMS Test: http://localhost:${PORT}/api/sms/test`);
+  console.log(`📝 Create Adoption: http://localhost:${PORT}/api/adoptions`);  
   console.log('🚀 ========================================');
 });

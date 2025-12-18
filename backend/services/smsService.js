@@ -14,20 +14,16 @@ class SMSService {
   formatPhoneNumber(phoneNumber) {
     if (!phoneNumber) return null;
     
-   
     let cleaned = phoneNumber.replace(/[\s\-()+ ]/g, '');
     
-  
     if (cleaned.startsWith('63') && cleaned.length === 12) {
       return cleaned;
     }
     
-   
     if (cleaned.startsWith('0') && cleaned.length === 11) {
       return '63' + cleaned.substring(1);
     }
     
-  
     if (cleaned.startsWith('9') && cleaned.length === 10) {
       return '63' + cleaned;
     }
@@ -48,7 +44,6 @@ class SMSService {
       console.log('  To:', formattedPhone);
       console.log('  Message length:', message.length);
 
-   
       if (!iprogConfig.isConfigured) {
         console.log('🔧 MOCK MODE - SMS not actually sent');
         console.log('📝 Message:', message);
@@ -61,22 +56,22 @@ class SMSService {
         };
       }
 
-      
+
       const response = await axios.post(
         'https://sms.iprogtech.com/api/v1/sms_messages',
         null,
         {
           params: {
-            api_token: iprogConfig.apiKey,
-            phone_number: formattedPhone,
-            message: message
-          }
+  api_token: iprogConfig.apiKey,
+  phone_number: formattedPhone,
+  message: message,
+  sender_name: "iprogtech" 
+}
         }
       );
 
       console.log('📥 iProg Response:', response.data);
 
-    
       if (response.data.status === 200 || response.data.status === 'success') {
         console.log('✅ SMS sent successfully via iProg!');
         return {
@@ -212,6 +207,5 @@ Please don't be discouraged! There are many wonderful pets waiting for loving ho
     }
   }
 }
-
 
 module.exports = new SMSService();
