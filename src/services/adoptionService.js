@@ -2,7 +2,7 @@ import { collection, addDoc, Timestamp, query, where, getDocs, updateDoc, doc, g
 import { db } from '../config/firebaseConfig';
 
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+const API_URL = process.env.REACT_APP_API_URL || 'https://taara-backend-5xvrecqzn-janines-projects-ad59dcb1.vercel.app';
 
 const adoptionService = {
   submitAdoption: async (adoptionData) => {
@@ -12,7 +12,7 @@ const adoptionService = {
       const adoptionsRef = collection(db, 'adoptions');
       
       const docRef = await addDoc(adoptionsRef, {
-      
+    
         userId: adoptionData.userId,
         userEmail: adoptionData.userEmail,
         fullName: adoptionData.fullName,
@@ -24,13 +24,17 @@ const adoptionService = {
         petBreed: adoptionData.petBreed,
         petAge: adoptionData.petAge,
         
-
+        
+        ownerId: adoptionData.ownerId,
+        ownerPhone: adoptionData.ownerPhone,
+        
+   
         address: adoptionData.address,
         reason: adoptionData.reason,
         hasExperience: adoptionData.hasExperience,
         hasOtherPets: adoptionData.hasOtherPets,
         
-     
+       
         status: 'pending', 
         createdAt: Timestamp.fromDate(new Date()),
         updatedAt: Timestamp.fromDate(new Date())
@@ -38,36 +42,41 @@ const adoptionService = {
       
       console.log('✅ Adoption submitted successfully with ID:', docRef.id);
       
-   
-try {
-  console.log('📱 Notifying backend to send SMS...');
-  
-  const response = await fetch(`${API_URL}/api/sms/adoption-notification`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      ownerPhone: '09936639774', 
-      petName: adoptionData.petName,
-      adopterName: adoptionData.fullName,
-      adopterContact: adoptionData.phoneNumber,
-      adoptionId: docRef.id
-    })
-  });
-  
-  const result = await response.json();
-  
-  if (result.success) {
-    console.log('✅ SMS notification sent to owner successfully');
-  } else {
-    console.warn('⚠️ SMS notification failed:', result.error);
-  }
-} catch (smsError) {
- 
-  console.error('⚠️ SMS notification error (non-critical):', smsError.message);
-}
-
+      
+      try {
+        console.log('📱 Notifying backend to send SMS...');
+        
+      
+        const ownerPhone = adoptionData.ownerPhone;
+        
+        if (!ownerPhone) {
+          console.warn('⚠️ Owner phone number not provided, SMS not sent');
+        } else {
+          const response = await fetch(`${API_URL}/api/sms/adoption-notification`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              ownerPhone: ownerPhone, 
+              petName: adoptionData.petName,
+              adopterName: adoptionData.fullName,
+              adopterContact: adoptionData.phoneNumber,
+              adoptionId: docRef.id
+            })
+          });
+          
+          const result = await response.json();
+          
+          if (result.success) {
+            console.log('✅ SMS notification sent to owner successfully');
+          } else {
+            console.warn('⚠️ SMS notification failed:', result.message);
+          }
+        }
+      } catch (smsError) {
+        console.error('⚠️ SMS notification error (non-critical):', smsError.message);
+      }
       
       return {
         success: true,
@@ -162,7 +171,6 @@ try {
     try {
       console.log('🔄 Updating adoption status:', { adoptionId, newStatus });
 
-
       const adoptionDocRef = doc(db, 'adoptions', adoptionId);
       const adoptionSnap = await getDoc(adoptionDocRef);
       
@@ -175,7 +183,7 @@ try {
 
       console.log('📋 Adoption data:', { petId, petName: adoptionData.petName });
 
-   
+  
       await updateDoc(adoptionDocRef, {
         status: newStatus,
         updatedAt: Timestamp.fromDate(new Date()),
@@ -185,7 +193,6 @@ try {
 
       console.log('✅ Adoption status updated to:', newStatus);
 
-      
       try {
         const adopterPhone = adoptionData.phoneNumber;
         
@@ -193,20 +200,28 @@ try {
           console.log(`📱 Sending ${newStatus} notification via backend...`);
           
           const endpoint = newStatus === 'approved' 
-            ? '/api/sms/adoption-approval' 
-            : '/api/sms/adoption-rejection';
+            ? '/api/sms/approval-notification' 
+            : '/api/sms/rejection-notification';
           
           const response = await fetch(`${API_URL}${endpoint}`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-              phoneNumber: adopterPhone,
-              petName: adoptionData.petName,
-              organizationName: 'TAARA Pet Adoption',
-              reason: adminNotes || 'Thank you for your interest'
-            })
+            body: JSON.stringify(
+              newStatus === 'approved' 
+                ? {
+                    adopterPhone: adopterPhone,
+                    petName: adoptionData.petName,
+                    ownerName: 'TAARA Pet Adoption',
+                    ownerContact: adoptionData.ownerPhone || 'N/A'
+                  }
+                : {
+                    adopterPhone: adopterPhone,
+                    petName: adoptionData.petName,
+                    reason: adminNotes || 'Please contact us for more information'
+                  }
+            )
           });
           
           const result = await response.json();
@@ -214,7 +229,7 @@ try {
           if (result.success) {
             console.log('✅ SMS sent to adopter successfully');
           } else {
-            console.warn('⚠️ SMS to adopter failed:', result.error);
+            console.warn('⚠️ SMS to adopter failed:', result.message);
           }
         }
       } catch (smsError) {

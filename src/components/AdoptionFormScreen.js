@@ -59,6 +59,7 @@ const AdoptionFormScreen = ({ pet, setCurrentScreen, currentUser }) => {
     hasOtherPets: false
   });
   const [userData, setUserData] = useState(null);
+  const [ownerData, setOwnerData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -79,6 +80,30 @@ const AdoptionFormScreen = ({ pet, setCurrentScreen, currentUser }) => {
     };
     fetchUserData();
   }, [currentUser]);
+
+ 
+  useEffect(() => {
+    const fetchOwnerData = async () => {
+      if (pet.ownerId) {
+        try {
+          console.log('🔍 Fetching owner data for ownerId:', pet.ownerId);
+          const ownerDoc = await getDoc(doc(db, 'users', pet.ownerId));
+          if (ownerDoc.exists()) {
+            const owner = ownerDoc.data();
+            console.log('✅ Owner data fetched:', owner);
+            setOwnerData(owner);
+          } else {
+            console.warn('⚠️ Owner document not found for:', pet.ownerId);
+          }
+        } catch (error) {
+          console.error('❌ Error fetching owner data:', error);
+        }
+      } else {
+        console.warn('⚠️ Pet has no ownerId:', pet);
+      }
+    };
+    fetchOwnerData();
+  }, [pet]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -107,27 +132,37 @@ const AdoptionFormScreen = ({ pet, setCurrentScreen, currentUser }) => {
 
     try {
       const adoptionData = {
-     
+        
         petId: pet.id,
         petName: pet.name,
         petBreed: pet.breed || '',
         petAge: pet.age || '',
         
-       
         userId: currentUser.uid,
         userEmail: currentUser.email,
         fullName: userData?.fullName || currentUser.displayName || currentUser.email?.split('@')[0] || 'User',
         phoneNumber: userData?.phoneNumber || '',
         
-   
+  
+        ownerId: pet.ownerId || '',
+        ownerPhone: ownerData?.phoneNumber || pet.ownerPhone || '',
+        
+       
         address: formData.address,
         reason: formData.reason,
         hasExperience: formData.hasExperience,
         hasOtherPets: formData.hasOtherPets,
         
-       
+        
         status: 'pending'
       };
+      
+      console.log('📤 Submitting adoption with data:', adoptionData);
+      
+      
+      if (!adoptionData.ownerPhone) {
+        console.warn('⚠️ Owner phone number not available - SMS notification may fail');
+      }
       
       const result = await adoptionService.submitAdoption(adoptionData);
       
@@ -185,7 +220,7 @@ const AdoptionFormScreen = ({ pet, setCurrentScreen, currentUser }) => {
               </div>
               
               <p className="text-sm text-gray-600 mb-6">
-                We will review your application and contact you soon!
+                The pet owner has been notified via SMS and will review your application soon!
               </p>
               
               <button
@@ -243,7 +278,7 @@ const AdoptionFormScreen = ({ pet, setCurrentScreen, currentUser }) => {
           </div>
         )}
 
-      {}
+        {}
         <div className="mb-4">
           <label className="block text-gray-700 text-sm font-semibold mb-2">
             Complete Address *
