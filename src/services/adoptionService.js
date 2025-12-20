@@ -1,7 +1,7 @@
 import { collection, addDoc, Timestamp, query, where, getDocs, updateDoc, doc, getDoc } from 'firebase/firestore';
 import { db } from '../config/firebaseConfig';
 
-
+// Use environment variable for API URL
 const API_URL = process.env.REACT_APP_API_URL || 'https://taara-backend.vercel.app';
 
 const adoptionService = {
@@ -9,48 +9,74 @@ const adoptionService = {
     try {
       console.log('📝 Submitting adoption to Firestore:', adoptionData);
       
+      // 🆕 STEP 1: FETCH PET DATA TO GET OWNER ID
+      const petDocRef = doc(db, 'pets', adoptionData.petId);
+      const petSnap = await getDoc(petDocRef);
+      
+      if (!petSnap.exists()) {
+        throw new Error('Pet not found');
+      }
+      
+      const petData = petSnap.data();
+      const ownerId = petData.ownerId;
+      
+      // 🆕 STEP 2: FETCH OWNER'S PHONE NUMBER FROM USERS COLLECTION
+      let ownerPhone = petData.ownerPhone; // Try direct phone first
+      
+      if (!ownerPhone && ownerId) {
+        console.log('📞 Fetching owner phone from users collection...');
+        const userDocRef = doc(db, 'users', ownerId);
+        const userSnap = await getDoc(userDocRef);
+        
+        if (userSnap.exists()) {
+          const userData = userSnap.data();
+          ownerPhone = userData.phoneNumber;
+          console.log('✅ Found owner phone:', ownerPhone);
+        } else {
+          console.warn('⚠️ Owner user document not found');
+        }
+      }
+      
+      // STEP 3: CREATE ADOPTION DOCUMENT
       const adoptionsRef = collection(db, 'adoptions');
       
       const docRef = await addDoc(adoptionsRef, {
-    
+        // User info
         userId: adoptionData.userId,
         userEmail: adoptionData.userEmail,
         fullName: adoptionData.fullName,
         phoneNumber: adoptionData.phoneNumber,
         
-      
+        // Pet info
         petId: adoptionData.petId,
         petName: adoptionData.petName,
         petBreed: adoptionData.petBreed,
         petAge: adoptionData.petAge,
         
+        // Owner info (fetched from Firestore)
+        ownerId: ownerId,
+        ownerPhone: ownerPhone,
         
-        ownerId: adoptionData.ownerId,
-        ownerPhone: adoptionData.ownerPhone,
-        
-   
+        // Adoption details
         address: adoptionData.address,
         reason: adoptionData.reason,
         hasExperience: adoptionData.hasExperience,
         hasOtherPets: adoptionData.hasOtherPets,
         
-       
-        status: 'pending', 
+        // Status
+        status: 'pending',
         createdAt: Timestamp.fromDate(new Date()),
         updatedAt: Timestamp.fromDate(new Date())
       });
       
       console.log('✅ Adoption submitted successfully with ID:', docRef.id);
       
-      
+      // STEP 4: SEND SMS NOTIFICATION TO OWNER
       try {
         console.log('📱 Notifying backend to send SMS...');
         
-      
-        const ownerPhone = adoptionData.ownerPhone;
-        
         if (!ownerPhone) {
-          console.warn('⚠️ Owner phone number not provided, SMS not sent');
+          console.warn('⚠️ Owner phone number not found, SMS not sent');
         } else {
           const response = await fetch(`${API_URL}/api/sms/adoption-notification`, {
             method: 'POST',
@@ -58,7 +84,7 @@ const adoptionService = {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              ownerPhone: ownerPhone, 
+              ownerPhone: ownerPhone,
               petName: adoptionData.petName,
               adopterName: adoptionData.fullName,
               adopterContact: adoptionData.phoneNumber,
@@ -183,7 +209,7 @@ const adoptionService = {
 
       console.log('📋 Adoption data:', { petId, petName: adoptionData.petName });
 
-  
+      // Update adoption document
       await updateDoc(adoptionDocRef, {
         status: newStatus,
         updatedAt: Timestamp.fromDate(new Date()),
@@ -193,6 +219,7 @@ const adoptionService = {
 
       console.log('✅ Adoption status updated to:', newStatus);
 
+      // Send SMS to adopter
       try {
         const adopterPhone = adoptionData.phoneNumber;
         
@@ -236,6 +263,7 @@ const adoptionService = {
         console.error('⚠️ SMS notification error (non-critical):', smsError.message);
       }
   
+      // Update pet status based on adoption status
       if (newStatus === 'approved' && petId) {
         try {
           const petDocRef = doc(db, 'pets', petId);
