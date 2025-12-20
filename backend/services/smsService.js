@@ -107,8 +107,8 @@ class SMSService {
   adoptionId
 }) {
   try {
-    
-    const message = `TAARA: ${adopterName} wants to adopt ${petName}! Contact: ${adopterContact}. ID: ${adoptionId}. Check dashboard.`;
+
+   const message = `TAARA: ${adopterName} wants ${petName}. Ph: ${adopterContact}. ID:${adoptionId}`;
 
     console.log('📝 Message to send:', message);
     console.log('📏 Message length:', message.length, 'characters');
@@ -121,7 +121,7 @@ class SMSService {
   }
 }
 
-
+  
   async sendApprovalNotification({
     adopterPhone,
     petName,
