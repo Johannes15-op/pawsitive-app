@@ -10,31 +10,29 @@ class SMSService {
     }
   }
 
- 
   formatPhoneNumber(phoneNumber) {
     if (!phoneNumber) return null;
     
-   
+    // Remove all non-numeric characters
     let cleaned = phoneNumber.replace(/[\s\-()+ ]/g, '');
     
-  
+    // If already in correct format (63XXXXXXXXXX)
     if (cleaned.startsWith('63') && cleaned.length === 12) {
       return cleaned;
     }
     
-   
+    // If starts with 0 (09XXXXXXXXX)
     if (cleaned.startsWith('0') && cleaned.length === 11) {
       return '63' + cleaned.substring(1);
     }
     
-  
+    // If starts with 9 (9XXXXXXXXX)
     if (cleaned.startsWith('9') && cleaned.length === 10) {
       return '63' + cleaned;
     }
     
     return cleaned;
   }
-
 
   async sendSMS(phoneNumber, message) {
     try {
@@ -48,7 +46,7 @@ class SMSService {
       console.log('  To:', formattedPhone);
       console.log('  Message length:', message.length);
 
-   
+      // Mock mode for testing
       if (!iprogConfig.isConfigured) {
         console.log('🔧 MOCK MODE - SMS not actually sent');
         console.log('📝 Message:', message);
@@ -61,23 +59,23 @@ class SMSService {
         };
       }
 
-      
-     const response = await axios.post(
-  'https://sms.iprogtech.com/api/v1/sms_messages',
-  null,
-  {
-    params: {
-      api_token: iprogConfig.apiKey,
-      phone_number: formattedPhone,
-      message: message,
-      sender_name: iprogConfig.senderName  
-    }
-  }
-);
+      // Send via iProg API
+      const response = await axios.post(
+        'https://sms.iprogtech.com/api/v1/sms_messages',
+        null,
+        {
+          params: {
+            api_token: iprogConfig.apiKey,
+            phone_number: formattedPhone,
+            message: message,
+            sender_name: iprogConfig.senderName  
+          }
+        }
+      );
 
       console.log('📥 iProg Response:', response.data);
 
-    
+      // Check if successful
       if (response.data.status === 200 || response.data.status === 'success') {
         console.log('✅ SMS sent successfully via iProg!');
         return {
@@ -104,7 +102,7 @@ class SMSService {
     }
   }
 
- 
+  // Send adoption notification to pet owner
   async sendAdoptionNotification({
     ownerPhone,
     petName,
@@ -113,17 +111,20 @@ class SMSService {
     adoptionId
   }) {
     try {
-      const message = `🐾 TAARA PET ADOPTION ALERT
+      // Plain text format (no emojis) for better SMS compatibility
+      const message = `TAARA PET ADOPTION ALERT
 
 Someone wants to adopt ${petName}!
 
-Adopter: ${adopterName}
-Contact: ${adopterContact}
+Adopter Details:
+Name: ${adopterName}
+Phone: ${adopterContact}
 Request ID: ${adoptionId}
 
-Please log in to your account to review and respond to this adoption request.
+Please check your dashboard to review and respond to this adoption request.
 
-- TAARA Pet Adoption Team`;
+Thank you,
+TAARA Pet Adoption Team`;
 
       return await this.sendSMS(ownerPhone, message);
 
@@ -133,7 +134,7 @@ Please log in to your account to review and respond to this adoption request.
     }
   }
 
-  
+  // Send approval notification to adopter
   async sendApprovalNotification({
     adopterPhone,
     petName,
@@ -141,17 +142,19 @@ Please log in to your account to review and respond to this adoption request.
     ownerContact
   }) {
     try {
-      const message = `🎉 ADOPTION APPROVED!
+      const message = `ADOPTION APPROVED!
 
 Congratulations! Your adoption request for ${petName} has been approved!
 
-Owner: ${ownerName}
+Pet Owner Details:
+Name: ${ownerName}
 Contact: ${ownerContact}
 
 The owner will contact you soon to arrange the adoption details.
 
 Thank you for choosing to adopt!
-- TAARA Pet Adoption Team`;
+
+TAARA Pet Adoption Team`;
 
       return await this.sendSMS(adopterPhone, message);
 
@@ -161,7 +164,7 @@ Thank you for choosing to adopt!
     }
   }
 
-
+  // Send rejection notification to adopter
   async sendRejectionNotification({
     adopterPhone,
     petName,
@@ -172,11 +175,11 @@ Thank you for choosing to adopt!
 
 We regret to inform you that your adoption request for ${petName} was not approved at this time.
 
-${reason ? `Reason: ${reason}` : ''}
+${reason ? `Reason: ${reason}` : 'Please contact us for more information.'}
 
-Please don't be discouraged! There are many wonderful pets waiting for loving homes.
+Don't be discouraged! There are many wonderful pets waiting for loving homes. Please browse our other available pets.
 
-- TAARA Pet Adoption Team`;
+TAARA Pet Adoption Team`;
 
       return await this.sendSMS(adopterPhone, message);
 
@@ -186,7 +189,7 @@ Please don't be discouraged! There are many wonderful pets waiting for loving ho
     }
   }
 
-
+  // Check SMS balance
   async checkBalance() {
     try {
       if (!iprogConfig.isConfigured) {
@@ -212,7 +215,24 @@ Please don't be discouraged! There are many wonderful pets waiting for loving ho
       throw error;
     }
   }
-}
 
+  // Test SMS function
+  async testSMS(phoneNumber) {
+    try {
+      const message = `TAARA Test Message
+
+This is a test SMS from TAARA Pet Adoption System.
+
+If you received this, your SMS service is working correctly!
+
+- TAARA Team`;
+
+      return await this.sendSMS(phoneNumber, message);
+    } catch (error) {
+      console.error('❌ Test SMS Error:', error.message);
+      throw error;
+    }
+  }
+}
 
 module.exports = new SMSService();
