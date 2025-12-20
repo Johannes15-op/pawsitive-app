@@ -13,19 +13,17 @@ class SMSService {
   formatPhoneNumber(phoneNumber) {
     if (!phoneNumber) return null;
     
-    
+   
     let cleaned = phoneNumber.replace(/[\s\-()+ ]/g, '');
     
-    
+   
     if (cleaned.startsWith('63') && cleaned.length === 12) {
       return cleaned;
     }
     
-    
     if (cleaned.startsWith('0') && cleaned.length === 11) {
       return '63' + cleaned.substring(1);
     }
-    
     
     if (cleaned.startsWith('9') && cleaned.length === 10) {
       return '63' + cleaned;
@@ -46,7 +44,6 @@ class SMSService {
       console.log('  To:', formattedPhone);
       console.log('  Message length:', message.length);
 
-      
       if (!iprogConfig.isConfigured) {
         console.log('🔧 MOCK MODE - SMS not actually sent');
         console.log('📝 Message:', message);
@@ -59,7 +56,7 @@ class SMSService {
         };
       }
 
-      
+    
       const response = await axios.post(
         'https://sms.iprogtech.com/api/v1/sms_messages',
         null,
@@ -75,7 +72,6 @@ class SMSService {
 
       console.log('📥 iProg Response:', response.data);
 
-      
       if (response.data.status === 200 || response.data.status === 'success') {
         console.log('✅ SMS sent successfully via iProg!');
         return {
@@ -102,6 +98,7 @@ class SMSService {
     }
   }
 
+
   async sendAdoptionNotification({
   ownerPhone,
   petName,
@@ -111,13 +108,7 @@ class SMSService {
 }) {
   try {
     
-    const message = `TAARA ADOPTION ALERT
-Pet: ${petName}
-Adopter: ${adopterName}
-Phone: ${adopterContact}
-ID: ${adoptionId}
-
-Check your dashboard to review.`;
+    const message = `TAARA: ${adopterName} wants to adopt ${petName}! Contact: ${adopterContact}. ID: ${adoptionId}. Check dashboard.`;
 
     console.log('📝 Message to send:', message);
     console.log('📏 Message length:', message.length, 'characters');
@@ -130,6 +121,7 @@ Check your dashboard to review.`;
   }
 }
 
+
   async sendApprovalNotification({
     adopterPhone,
     petName,
@@ -137,13 +129,8 @@ Check your dashboard to review.`;
     ownerContact
   }) {
     try {
-   
-      const message = `ADOPTION APPROVED!
-Pet: ${petName}
-Owner: ${ownerName}
-Contact: ${ownerContact}
 
-They will contact you soon. Congratulations!`;
+      const message = `APPROVED! ${petName} adoption approved. Owner: ${ownerName}, Contact: ${ownerContact}. They will call you soon!`;
 
       console.log('📝 Approval message:', message);
       console.log('📏 Length:', message.length, 'characters');
@@ -163,8 +150,8 @@ They will contact you soon. Congratulations!`;
     reason
   }) {
     try {
-      
-      const message = `TAARA Update: Your request for ${petName} was not approved. ${reason ? `Reason: ${reason}` : 'Contact us for details.'} Check other pets!`;
+
+      const message = `TAARA: ${petName} adoption not approved. ${reason ? `Reason: ${reason}.` : ''} Check other pets at taara.com`;
 
       console.log('📝 Rejection message:', message);
       console.log('📏 Length:', message.length, 'characters');
@@ -176,7 +163,6 @@ They will contact you soon. Congratulations!`;
       throw error;
     }
   }
-
 
   async checkBalance() {
     try {
@@ -204,16 +190,13 @@ They will contact you soon. Congratulations!`;
     }
   }
 
-
+  
   async testSMS(phoneNumber) {
     try {
-      const message = `TAARA Test Message
+      const message = `TAARA Test: SMS service is working correctly. This is a test message from TAARA Pet Adoption System.`;
 
-This is a test SMS from TAARA Pet Adoption System.
-
-If you received this, your SMS service is working correctly!
-
-- TAARA Team`;
+      console.log('📝 Test message:', message);
+      console.log('📏 Length:', message.length, 'characters');
 
       return await this.sendSMS(phoneNumber, message);
     } catch (error) {
