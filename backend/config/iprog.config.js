@@ -3,7 +3,8 @@ require('dotenv').config();
 const iprogConfig = {
   apiKey: process.env.IPROG_API_KEY,
   senderId: process.env.IPROG_SENDER_ID || 'TAARA',
-  senderName: 'kaprets', 
+  senderName: process.env.IPROG_SENDER_NAME || 'TAARA', 
+  enabled: process.env.IPROG_ENABLED === 'true', 
   isConfigured: Boolean(process.env.IPROG_API_KEY)
 };
 

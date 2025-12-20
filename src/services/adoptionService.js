@@ -2,7 +2,7 @@ import { collection, addDoc, Timestamp, query, where, getDocs, updateDoc, doc, g
 import { db } from '../config/firebaseConfig';
 
 
-const API_URL = process.env.REACT_APP_API_URL || 'https://taara-backend-5xvrecqzn-janines-projects-ad59dcb1.vercel.app';
+const API_URL = process.env.REACT_APP_API_URL || 'https://taara-backend-a225t8joa-janines-projects-ad59dcb1.vercel.app';
 
 const adoptionService = {
   submitAdoption: async (adoptionData) => {
