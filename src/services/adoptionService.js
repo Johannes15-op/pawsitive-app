@@ -9,7 +9,7 @@ const adoptionService = {
     try {
       console.log('📝 Submitting adoption to Firestore:', adoptionData);
       
-      // 🆕 STEP 1: FETCH PET DATA TO GET OWNER ID
+      // STEP 1: FETCH PET DATA TO GET OWNER ID
       const petDocRef = doc(db, 'pets', adoptionData.petId);
       const petSnap = await getDoc(petDocRef);
       
@@ -20,7 +20,7 @@ const adoptionService = {
       const petData = petSnap.data();
       const ownerId = petData.ownerId;
       
-      // 🆕 STEP 2: FETCH OWNER'S PHONE NUMBER FROM USERS COLLECTION
+      // STEP 2: FETCH OWNER'S PHONE NUMBER FROM USERS COLLECTION
       let ownerPhone = petData.ownerPhone; // Try direct phone first
       
       if (!ownerPhone && ownerId) {
@@ -71,7 +71,18 @@ const adoptionService = {
       
       console.log('✅ Adoption submitted successfully with ID:', docRef.id);
       
-      // STEP 4: SEND SMS NOTIFICATION TO OWNER
+      // 🆕 STEP 4: UPDATE PET STATUS TO PENDING
+      try {
+        await updateDoc(petDocRef, {
+          status: 'pending',
+          updatedAt: Timestamp.fromDate(new Date())
+        });
+        console.log('✅ Pet status updated to PENDING');
+      } catch (petError) {
+        console.error('⚠️ Error updating pet status to pending:', petError);
+      }
+      
+      // STEP 5: SEND SMS NOTIFICATION TO OWNER
       try {
         console.log('📱 Notifying backend to send SMS...');
         

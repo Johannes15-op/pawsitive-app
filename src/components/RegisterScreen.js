@@ -114,7 +114,7 @@ const RegisterScreen = ({ setCurrentScreen, setCurrentUser }) => {
                 name="fullName"
                 value={formData.fullName}
                 onChange={handleChange}
-                placeholder=""
+                placeholder="Full Name"
                 className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
                 required
               />
