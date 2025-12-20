@@ -111,20 +111,17 @@ class SMSService {
     adoptionId
   }) {
     try {
-      // Plain text format (no emojis) for better SMS compatibility
-      const message = `TAARA PET ADOPTION ALERT
-
-Someone wants to adopt ${petName}!
-
-Adopter Details:
-Name: ${adopterName}
+      // Compact format to fit in one SMS (under 160 chars)
+      const message = `TAARA ADOPTION ALERT
+Pet: ${petName}
+Adopter: ${adopterName}
 Phone: ${adopterContact}
-Request ID: ${adoptionId}
+ID: ${adoptionId}
 
-Please check your dashboard to review and respond to this adoption request.
+Check your dashboard to review.`;
 
-Thank you,
-TAARA Pet Adoption Team`;
+      console.log('📝 Message to send:', message);
+      console.log('📏 Message length:', message.length, 'characters');
 
       return await this.sendSMS(ownerPhone, message);
 
@@ -142,19 +139,16 @@ TAARA Pet Adoption Team`;
     ownerContact
   }) {
     try {
+      // Compact format
       const message = `ADOPTION APPROVED!
-
-Congratulations! Your adoption request for ${petName} has been approved!
-
-Pet Owner Details:
-Name: ${ownerName}
+Pet: ${petName}
+Owner: ${ownerName}
 Contact: ${ownerContact}
 
-The owner will contact you soon to arrange the adoption details.
+They will contact you soon. Congratulations!`;
 
-Thank you for choosing to adopt!
-
-TAARA Pet Adoption Team`;
+      console.log('📝 Approval message:', message);
+      console.log('📏 Length:', message.length, 'characters');
 
       return await this.sendSMS(adopterPhone, message);
 
@@ -171,15 +165,11 @@ TAARA Pet Adoption Team`;
     reason
   }) {
     try {
-      const message = `TAARA Pet Adoption Update
+      // Compact format
+      const message = `TAARA Update: Your request for ${petName} was not approved. ${reason ? `Reason: ${reason}` : 'Contact us for details.'} Check other pets!`;
 
-We regret to inform you that your adoption request for ${petName} was not approved at this time.
-
-${reason ? `Reason: ${reason}` : 'Please contact us for more information.'}
-
-Don't be discouraged! There are many wonderful pets waiting for loving homes. Please browse our other available pets.
-
-TAARA Pet Adoption Team`;
+      console.log('📝 Rejection message:', message);
+      console.log('📏 Length:', message.length, 'characters');
 
       return await this.sendSMS(adopterPhone, message);
 
