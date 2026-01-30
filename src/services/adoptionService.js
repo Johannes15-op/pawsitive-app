@@ -1,22 +1,8 @@
 import { collection, addDoc, Timestamp, query, where, getDocs, updateDoc, doc, getDoc, orderBy } from 'firebase/firestore';
 import { db } from '../config/firebaseConfig';
+import notificationService from './notificationService'; 
 
 const API_URL = process.env.REACT_APP_API_URL || 'https://taara-backend.vercel.app';
-
-const createNotification = async (notificationData) => {
-  try {
-    await addDoc(collection(db, 'notifications'), {
-      ...notificationData,
-      read: false,
-      createdAt: Timestamp.fromDate(new Date())
-    });
-    console.log('✅ Notification created successfully');
-    return { success: true };
-  } catch (error) {
-    console.error('❌ Error creating notification:', error);
-    return { success: false, error: error.message };
-  }
-};
 
 const adoptionService = {
   submitAdoption: async (adoptionData) => {
@@ -246,6 +232,7 @@ const adoptionService = {
 
       console.log('📋 Adoption data:', { petId, petName: adoptionData.petName });
 
+
       await updateDoc(adoptionDocRef, {
         status: newStatus,
         updatedAt: Timestamp.fromDate(new Date()),
@@ -255,27 +242,37 @@ const adoptionService = {
 
       console.log('✅ Adoption status updated to:', newStatus);
 
+    
       if (newStatus === 'approved') {
-        await createNotification({
+        console.log('📬 Creating approval notification...');
+        const notificationResult = await notificationService.createNotification({
           userId: adoptionData.userId,
           type: 'adoption_approved',
-          title: '✅ Verified – For Home Visit',
-          message: `Your adoption application for ${adoptionData.petName} has successfully passed the verification stage. It is now approved for a pre-adoption home inspection. Further details will be communicated shortly.`,
-          data: {
+          title: '🎉 Adoption Application Approved!',
+          message: `Congratulations! Your adoption application for ${adoptionData.petName} has been approved. You'll be contacted soon for the next steps including home inspection.`,
+          relatedId: adoptionId,
+          metadata: {
             adoptionId: adoptionId,
             petId: adoptionData.petId,
             petName: adoptionData.petName,
-            status: 'approved_for_home_visit'
+            status: 'approved'
           }
         });
-        console.log('✅ Approval notification created for user');
+        
+        if (notificationResult.success) {
+          console.log('✅ Approval notification created successfully');
+        } else {
+          console.error('❌ Failed to create approval notification:', notificationResult.error);
+        }
       } else if (newStatus === 'rejected') {
-        await createNotification({
+        console.log('📬 Creating rejection notification...');
+        const notificationResult = await notificationService.createNotification({
           userId: adoptionData.userId,
           type: 'adoption_rejected',
           title: '❌ Adoption Application Update',
           message: `We regret to inform you that your adoption application for ${adoptionData.petName} has been declined. ${adminNotes ? 'Reason: ' + adminNotes : 'Please contact us for more information.'}`,
-          data: {
+          relatedId: adoptionId,
+          metadata: {
             adoptionId: adoptionId,
             petId: adoptionData.petId,
             petName: adoptionData.petName,
@@ -283,9 +280,15 @@ const adoptionService = {
             reason: adminNotes || ''
           }
         });
-        console.log('✅ Rejection notification created for user');
+        
+        if (notificationResult.success) {
+          console.log('✅ Rejection notification created successfully');
+        } else {
+          console.error('❌ Failed to create rejection notification:', notificationResult.error);
+        }
       }
 
+    
       try {
         const adopterPhone = adoptionData.phoneNumber;
         
@@ -329,6 +332,7 @@ const adoptionService = {
         console.error('⚠️ SMS notification error (non-critical):', smsError.message);
       }
   
+    
       if (newStatus === 'approved' && petId) {
         try {
           const petDocRef = doc(db, 'pets', petId);
@@ -358,7 +362,7 @@ const adoptionService = {
       
       return {
         success: true,
-        message: 'Adoption status updated successfully'
+        message: 'Adoption status updated and notification sent successfully'
       };
     } catch (error) {
       console.error('❌ Error updating adoption status:', error);
