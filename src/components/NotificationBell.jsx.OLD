@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Bell, CheckCheck, ExternalLink, Trash2 } from 'lucide-react';
-import { useNotifications } from '../contexts/NotificationContext';
+import { useNotifications } from '../contexts/NotificationContext'; 
 
 const NotificationBell = ({ setCurrentScreen }) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
+  
   
   const { 
     notifications, 
@@ -137,6 +138,7 @@ const NotificationBell = ({ setCurrentScreen }) => {
 
       {isOpen && (
         <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-xl shadow-2xl z-50 max-h-[80vh] overflow-hidden flex flex-col border border-gray-200">
+          {}
           <div className="p-4 border-b border-gray-200 flex items-center justify-between bg-gradient-to-r from-pink-500 to-purple-500">
             <h3 className="font-bold text-white text-lg">Notifications</h3>
             <div className="flex items-center gap-2">
@@ -163,6 +165,7 @@ const NotificationBell = ({ setCurrentScreen }) => {
             </div>
           </div>
 
+          {/* Notifications List */}
           <div className="overflow-y-auto flex-1">
             {displayNotifications.length === 0 ? (
               <div className="p-8 text-center text-gray-500">
@@ -208,6 +211,7 @@ const NotificationBell = ({ setCurrentScreen }) => {
             )}
           </div>
 
+          {/* Footer */}
           <div className="p-3 border-t border-gray-200 bg-gray-50">
             {setCurrentScreen ? (
               <button

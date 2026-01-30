@@ -26,18 +26,25 @@ import Sidebar from './components/Sidebar';
 import KaponSchedule from './components/KaponSchedule';
 import KaponForm from './components/KaponForm';
 import TestSMS from './components/TestSMS';
+import NotificationsScreen from './components/NotificationsScreen';
 
 const App = () => {
   const [currentScreen, setCurrentScreen] = useState('loading');
   const [currentUser, setCurrentUser] = useState(null);
   const [userRole, setUserRole] = useState(null);
-  const [selectedPet, setSelectedPet] = useState(null);
-  const [selectedSchedule, setSelectedSchedule] = useState(null);
+  const [selectedPet, setSelectedPet] = useState(() => {
+    const saved = localStorage.getItem('taara_selectedPet');
+    return saved ? JSON.parse(saved) : null;
+  });
+  const [selectedSchedule, setSelectedSchedule] = useState(() => {
+    const saved = localStorage.getItem('taara_selectedSchedule');
+    return saved ? JSON.parse(saved) : null;
+  });
   const [showSidebar, setShowSidebar] = useState(false);
   const [favorites, setFavorites] = useState([]);
   const [authChecked, setAuthChecked] = useState(false);
 
-  
+ 
   useEffect(() => {
     console.log('🔄 Setting up auth listener...');
     
@@ -73,7 +80,7 @@ const App = () => {
     return () => unsubscribe();
   }, []);
 
- 
+
   useEffect(() => {
     if (!authChecked) {
       console.log('⏳ Waiting for auth check...');
@@ -85,22 +92,74 @@ const App = () => {
     const loadingTimer = setTimeout(() => {
       console.log('🚀 Loading complete, redirecting...');
       
-      if (!currentUser) {
-        console.log('➡️ No user, going to welcome screen');
-        setCurrentScreen('welcome');
-      } else if (userRole === 'admin') {
-        console.log('➡️ Admin detected, going to admin dashboard');
-        setCurrentScreen('adminDashboard');
+
+      const savedScreen = localStorage.getItem('taara_currentScreen');
+      const nonPersistentScreens = ['loading', 'welcome', 'login', 'register'];
+      
+ 
+      if (savedScreen && !nonPersistentScreens.includes(savedScreen)) {
+        console.log('📍 Restoring saved screen:', savedScreen);
+        
+  
+        if (['adminDashboard', 'admin', 'createAnnouncement', 'addPet'].includes(savedScreen)) {
+          if (userRole === 'admin') {
+            setCurrentScreen(savedScreen);
+          } else {
+            console.log('⛔ Saved admin screen but user is not admin, going to home');
+            setCurrentScreen('home');
+          }
+        } else if (!currentUser && savedScreen !== 'home') {
+         
+          console.log('⛔ Saved screen requires auth but no user, going to welcome');
+          setCurrentScreen('welcome');
+        } else {
+          setCurrentScreen(savedScreen);
+        }
       } else {
-        console.log('➡️ Regular user, going to home screen');
-        setCurrentScreen('home');
+
+        if (!currentUser) {
+          console.log('➡️ No user, going to welcome screen');
+          setCurrentScreen('welcome');
+        } else if (userRole === 'admin') {
+          console.log('➡️ Admin detected, going to admin dashboard');
+          setCurrentScreen('adminDashboard');
+        } else {
+          console.log('➡️ Regular user, going to home screen');
+          setCurrentScreen('home');
+        }
       }
     }, 2000);
 
     return () => clearTimeout(loadingTimer);
   }, [authChecked, currentUser, userRole]);
 
- 
+
+  useEffect(() => {
+    if (currentScreen !== 'loading') {
+      localStorage.setItem('taara_currentScreen', currentScreen);
+      console.log('💾 Saved current screen:', currentScreen);
+    }
+  }, [currentScreen]);
+
+
+  useEffect(() => {
+    if (selectedPet) {
+      localStorage.setItem('taara_selectedPet', JSON.stringify(selectedPet));
+    } else {
+      localStorage.removeItem('taara_selectedPet');
+    }
+  }, [selectedPet]);
+
+
+  useEffect(() => {
+    if (selectedSchedule) {
+      localStorage.setItem('taara_selectedSchedule', JSON.stringify(selectedSchedule));
+    } else {
+      localStorage.removeItem('taara_selectedSchedule');
+    }
+  }, [selectedSchedule]);
+
+
   useEffect(() => {
     const savedFavorites = localStorage.getItem('taara_favorites');
     if (savedFavorites) {
@@ -108,12 +167,12 @@ const App = () => {
     }
   }, []);
 
- 
+
   useEffect(() => {
     localStorage.setItem('taara_favorites', JSON.stringify(favorites));
   }, [favorites]);
 
- 
+
   useEffect(() => {
     if (currentScreen === 'adminDashboard' || currentScreen === 'admin' || currentScreen === 'createAnnouncement' || currentScreen === 'addPet') {
       if (userRole !== 'admin') {
@@ -128,7 +187,6 @@ const App = () => {
     console.log('📤 Received donation data:', donationData);
     
     try {
-  
       if (!currentUser) {
         console.error('❌ User not logged in');
         alert('Please log in to make a donation');
@@ -138,7 +196,6 @@ const App = () => {
       console.log('✅ User authenticated:', currentUser.email);
       console.log('👤 User ID:', currentUser.uid);
 
-     
       const completeData = {
         ...donationData,
         userId: currentUser.uid,
@@ -147,7 +204,6 @@ const App = () => {
       };
 
       console.log('📝 Complete donation data:', completeData);
-
 
       console.log('🔄 Calling donationService.createDonation...');
       const result = await donationService.createDonation(completeData);
@@ -354,6 +410,16 @@ const App = () => {
             setSelectedPet={setSelectedPet}
             favorites={favorites}
             setFavorites={setFavorites}
+          />
+        );
+
+      case 'notifications':
+        return (
+          <NotificationsScreen 
+            currentScreen={currentScreen}
+            setCurrentScreen={setCurrentScreen}
+            setShowSidebar={setShowSidebar}
+            currentUser={currentUser}
           />
         );
         

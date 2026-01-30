@@ -1,430 +1,25 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { LogOut, PawPrint, Heart, MessageSquare, Users, BarChart3, Bell, UserCheck, Calendar, Menu, X, DollarSign, User, Eye, CheckCircle, Trash2 } from 'lucide-react';
+import { LogOut, PawPrint, Heart, MessageSquare, Users, BarChart3, Bell, UserCheck, Calendar, Menu, X, DollarSign, User } from 'lucide-react';
 import { signOut } from 'firebase/auth';
 import { auth } from '../config/firebaseConfig';
-import { collection, getDocs, updateDoc, doc, deleteDoc } from 'firebase/firestore';
-import { ref, deleteObject } from 'firebase/storage';
-import { db, storage } from '../config/firebaseConfig';
 import petService from '../services/petService';
 import adoptionService from '../services/adoptionService';
 import volunteerService from '../services/volunteerService';
 import kaponService from '../services/kaponService';
 import donationService from '../services/donationService';
+
 import AdoptionRequestsAdmin from './AdoptionRequestsAdmin';
 import VolunteerRequestsAdmin from './VolunteerRequestsAdmin';
 import KaponScheduleAdmin from './KaponScheduleAdmin';
 import DonationManagementAdmin from './DonationManagementAdmin';
 import UserManagementAdmin from './UserManagementAdmin';
+import ManagePets from './ManagePets';
 
 import logo from '../assets/image.jpg'; 
 import headerBg from '../assets/top.jpg';
 import adminProfileImg from '../assets/Maam Edna.jpg';
 
-import poknatImg from '../assets/pets/poknat.jpg';
-import netnetImg from '../assets/pets/Netnet.jpg';
-import natnatImg from '../assets/pets/Natnat.jpg';
-import mateaImg from '../assets/pets/Matea.jpg';
-import joniImg from '../assets/pets/Joni.jpg';
-import jonaImg from '../assets/pets/Jona.jpg';
-import pepitaImg from '../assets/pets/Pepita.jpg';
-import lebronImg from '../assets/pets/Lebron.jpg';
-import rondaImg from '../assets/pets/Ronda.jpg';
-import boydogImg from '../assets/pets/Boydog.jpg';
-import kajoImg from '../assets/pets/Kajo.jpg';
-import deltaImg from '../assets/pets/Delta.jpg';
-import charlieImg from '../assets/pets/Charlie.jpg';
-import hugoImg from '../assets/pets/Hugo.jpg';
-import dogdogImg from '../assets/pets/Dogdog.jpg';
-import snowImg from '../assets/pets/Snow.jpg';
-import dutchImg from '../assets/pets/Dutch.jpg';
-
-const petImages = {
-  'poknat.jpg': poknatImg,
-  'Netnet.jpg': netnetImg,
-  'Natnat.jpg': natnatImg,
-  'Matea.jpg': mateaImg,
-  'Joni.jpg': joniImg,
-  'Jona.jpg': jonaImg,
-  'Pepita.jpg': pepitaImg,
-  'Lebron.jpg': lebronImg,
-  'Ronda.jpg': rondaImg,
-  'Boydog.jpg': boydogImg,
-  'Kajo.jpg': kajoImg,
-  'Delta.jpg': deltaImg,
-  'Charlie.jpg': charlieImg,
-  'Hugo.jpg': hugoImg,
-  'Dogdog.jpg': dogdogImg,
-  'Snow.jpg': snowImg,
-  'Dutch.jpg': dutchImg
-};
-
-const getPetImage = (imageUrl) => {
-  if (!imageUrl) return null;
-
-  if (imageUrl.startsWith('assets/')) {
-    const filename = imageUrl.split('/').pop();
-    return petImages[filename] || null;
-  }
-  
-  return imageUrl;
-};
-
-const ManagePets = ({ setCurrentScreen }) => {
-  const [pets, setPets] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState('all');
-  const [selectedPet, setSelectedPet] = useState(null);
-  const [showModal, setShowModal] = useState(false);
-
-  useEffect(() => {
-    loadPets();
-  }, []);
-
-  const loadPets = async () => {
-    try {
-      setLoading(true);
-      const querySnapshot = await getDocs(collection(db, 'pets'));
-      const petsData = [];
-      
-      querySnapshot.forEach((doc) => {
-        petsData.push({
-          id: doc.id,
-          ...doc.data()
-        });
-      });
-      
-      setPets(petsData);
-    } catch (error) {
-      console.error('Error loading pets:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const updatePetStatus = async (petId, newStatus) => {
-    try {
-      const petRef = doc(db, 'pets', petId);
-      await updateDoc(petRef, {
-        status: newStatus,
-        updatedAt: new Date()
-      });
-      
-      setPets(pets.map(pet => 
-        pet.id === petId ? { ...pet, status: newStatus } : pet
-      ));
-    } catch (error) {
-      console.error('Error updating pet status:', error);
-    }
-  };
-
-  const deletePet = async (petId, imageUrl) => {
-    if (!window.confirm('Are you sure you want to delete this pet?')) {
-      return;
-    }
-
-    try {
-      if (imageUrl && imageUrl.includes('firebasestorage.googleapis.com')) {
-        const imageRef = ref(storage, imageUrl);
-        await deleteObject(imageRef);
-      }
-
-      await deleteDoc(doc(db, 'pets', petId));
-      setPets(pets.filter(pet => pet.id !== petId));
-    } catch (error) {
-      console.error('Error deleting pet:', error);
-    }
-  };
-
-  const filteredPets = pets.filter(pet => {
-    if (filter === 'all') return true;
-    return pet.status === filter;
-  });
-
-  const getStatusBadge = (status) => {
-    const statusConfig = {
-      available: { color: 'bg-green-100 text-green-800', text: 'Available' },
-      pending: { color: 'bg-yellow-100 text-yellow-800', text: 'Pending' },
-      adopted: { color: 'bg-blue-100 text-blue-800', text: 'Adopted' }
-    };
-    
-    const config = statusConfig[status] || statusConfig.available;
-    return (
-      <span className={`px-2 py-1 rounded-full text-xs font-medium ${config.color}`}>
-        {config.text}
-      </span>
-    );
-  };
-
-  if (loading) {
-    return (
-      <div className="bg-white rounded-xl shadow-md p-6">
-        <div className="flex items-center justify-center h-32">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pink-500"></div>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="bg-white rounded-xl shadow-md p-4 md:p-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between mb-6">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-800">Manage Pets</h2>
-          <p className="text-gray-600">View and manage all pets in the system</p>
-        </div>
-        <button
-          onClick={() => setCurrentScreen('addPet')}
-          className="bg-gradient-to-r from-pink-500 to-purple-500 text-white px-6 py-3 rounded-lg font-semibold hover:shadow-lg transition-all mt-4 md:mt-0"
-        >
-          + Add New Pet
-        </button>
-      </div>
-      
-      {}
-      <div className="flex flex-wrap gap-2 mb-6">
-        {['all', 'available', 'pending', 'adopted'].map((status) => (
-          <button
-            key={status}
-            onClick={() => setFilter(status)}
-            className={`px-4 py-2 rounded-lg font-medium transition-all ${
-              filter === status
-                ? 'bg-pink-500 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            {status.charAt(0).toUpperCase() + status.slice(1)}
-          </button>
-        ))}
-      </div>
-
-      {}
-      {filteredPets.length === 0 ? (
-        <div className="text-center py-12">
-          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Eye className="text-gray-400" size={24} />
-          </div>
-          <h3 className="text-lg font-semibold text-gray-600 mb-2">No pets found</h3>
-          <p className="text-gray-500">
-            {filter === 'all' 
-              ? 'No pets in the system yet.' 
-              : `No pets with status "${filter}".`}
-          </p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredPets.map((pet) => {
-            const petImageSrc = getPetImage(pet.imageUrl);
-            
-            return (
-              <div key={pet.id} className="bg-gray-50 rounded-lg overflow-hidden border border-gray-200">
-                {}
-                <div className="relative h-48 bg-gray-200">
-                  {petImageSrc ? (
-                    <img 
-                      src={petImageSrc} 
-                      alt={pet.name}
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        e.target.onerror = null;
-                        e.target.style.display = 'none';
-                        e.target.nextElementSibling.style.display = 'flex';
-                      }}
-                    />
-                  ) : null}
-                  <div className="w-full h-full flex items-center justify-center bg-gray-300" style={{ display: petImageSrc ? 'none' : 'flex' }}>
-                    <PawPrint size={48} className="text-gray-400" />
-                  </div>
-                  <div className="absolute top-2 right-2">
-                    {getStatusBadge(pet.status)}
-                  </div>
-                </div>
-
-                {}
-                <div className="p-4">
-                  <div className="flex items-start justify-between mb-2">
-                    <h3 className="font-bold text-lg text-gray-800">{pet.name}</h3>
-                    <span className="text-pink-500 text-sm">
-                      {pet.gender === 'male' ? '♂' : '♀'}
-                    </span>
-                  </div>
-                  
-                  <div className="space-y-1 text-sm text-gray-600 mb-4">
-                    <p><strong>Breed:</strong> {pet.breed || 'Not specified'}</p>
-                    <p><strong>Age:</strong> {pet.age || 'Not specified'}</p>
-                    {pet.size && <p><strong>Size:</strong> {pet.size}</p>}
-                    {pet.color && <p><strong>Color:</strong> {pet.color}</p>}
-                    {pet.vaccinated && <p className="text-green-600">✓ Vaccinated</p>}
-                    {pet.neutered && <p className="text-purple-600">✓ Spayed/Neutered</p>}
-                  </div>
-
-                 {}
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      onClick={() => {
-                        setSelectedPet(pet);
-                        setShowModal(true);
-                      }}
-                      className="flex-1 bg-blue-500 text-white py-2 px-3 rounded text-sm hover:bg-blue-600 transition-colors flex items-center justify-center gap-1"
-                    >
-                      <Eye size={14} />
-                      View
-                    </button>
-                    
-                    <button
-                      onClick={() => updatePetStatus(pet.id, 'adopted')}
-                      disabled={pet.status === 'adopted'}
-                      className="flex-1 bg-green-500 text-white py-2 px-3 rounded text-sm hover:bg-green-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-1"
-                    >
-                      <CheckCircle size={14} />
-                      Adopted
-                    </button>
-                    
-                    <button
-                      onClick={() => deletePet(pet.id, pet.imageUrl)}
-                      className="bg-red-500 text-white py-2 px-3 rounded text-sm hover:bg-red-600 transition-colors flex items-center justify-center gap-1"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {}
-      {showModal && selectedPet && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white border-b border-gray-200 p-4 flex justify-between items-center">
-              <h3 className="text-xl font-bold text-gray-800">Pet Details</h3>
-              <button
-                onClick={() => {
-                  setShowModal(false);
-                  setSelectedPet(null);
-                }}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                <X size={24} />
-              </button>
-            </div>
-            
-            <div className="p-6">
-              {}
-              <div className="relative h-64 bg-gray-200 rounded-lg overflow-hidden mb-6">
-                {getPetImage(selectedPet.imageUrl) ? (
-                  <img 
-                    src={getPetImage(selectedPet.imageUrl)} 
-                    alt={selectedPet.name}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      e.target.onerror = null;
-                      e.target.style.display = 'none';
-                      e.target.nextElementSibling.style.display = 'flex';
-                    }}
-                  />
-                ) : null}
-                <div className="w-full h-full flex items-center justify-center bg-gray-300" style={{ display: getPetImage(selectedPet.imageUrl) ? 'none' : 'flex' }}>
-                  <PawPrint size={64} className="text-gray-400" />
-                </div>
-                <div className="absolute top-2 right-2">
-                  {getStatusBadge(selectedPet.status)}
-                </div>
-              </div>
-
-              {}
-              <div className="space-y-4">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <h4 className="text-2xl font-bold text-gray-800">{selectedPet.name}</h4>
-                    <p className="text-gray-600">{selectedPet.breed || 'Not specified'}</p>
-                  </div>
-                  <span className="text-3xl">
-                    {selectedPet.gender === 'male' ? '♂' : '♀'}
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4 py-4 border-y border-gray-200">
-                  <div>
-                    <p className="text-sm text-gray-500">Age</p>
-                    <p className="font-semibold text-gray-800">{selectedPet.age || 'Not specified'}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Size</p>
-                    <p className="font-semibold text-gray-800">{selectedPet.size || 'Not specified'}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Color</p>
-                    <p className="font-semibold text-gray-800">{selectedPet.color || 'Not specified'}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Gender</p>
-                    <p className="font-semibold text-gray-800 capitalize">{selectedPet.gender || 'Not specified'}</p>
-                  </div>
-                </div>
-
-                {selectedPet.description && (
-                  <div>
-                    <p className="text-sm text-gray-500 mb-2">Description</p>
-                    <p className="text-gray-700">{selectedPet.description}</p>
-                  </div>
-                )}
-
-                <div className="flex flex-wrap gap-2">
-                  {selectedPet.vaccinated && (
-                    <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-medium">
-                      ✓ Vaccinated
-                    </span>
-                  )}
-                  {selectedPet.neutered && (
-                    <span className="bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-sm font-medium">
-                      ✓ Spayed/Neutered
-                    </span>
-                  )}
-                </div>
-
-                {selectedPet.createdAt && (
-                  <div className="text-sm text-gray-500 pt-4 border-t border-gray-200">
-                    Added on {new Date(selectedPet.createdAt.seconds * 1000).toLocaleDateString()}
-                  </div>
-                )}
-              </div>
-
-             {}
-              <div className="flex gap-2 mt-6 pt-4 border-t border-gray-200">
-                <button
-                  onClick={() => {
-                    updatePetStatus(selectedPet.id, 'adopted');
-                    setShowModal(false);
-                  }}
-                  disabled={selectedPet.status === 'adopted'}
-                  className="flex-1 bg-green-500 text-white py-3 rounded-lg hover:bg-green-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
-                >
-                  <CheckCircle size={18} />
-                  Mark as Adopted
-                </button>
-                
-                <button
-                  onClick={() => {
-                    if (window.confirm('Are you sure you want to delete this pet?')) {
-                      deletePet(selectedPet.id, selectedPet.imageUrl);
-                      setShowModal(false);
-                    }
-                  }}
-                  className="bg-red-500 text-white py-3 px-6 rounded-lg hover:bg-red-600 transition-colors flex items-center justify-center gap-2"
-                >
-                  <Trash2 size={18} />
-                  Delete
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
+import { getPetImage } from '../utils/getPetImage';
 
 const ModernAdminDashboard = ({ setCurrentScreen, currentUser, userRole }) => {
   const [activeTab, setActiveTab] = useState('overview');
@@ -437,7 +32,8 @@ const ModernAdminDashboard = ({ setCurrentScreen, currentUser, userRole }) => {
     pendingVolunteers: 0,
     pendingKaponSchedules: 0,
     totalDonations: 0,
-    donationsCount: 0
+    donationsCount: 0,
+    recentPets: []
   });
   const [loading, setLoading] = useState(true);
 
@@ -454,6 +50,9 @@ const ModernAdminDashboard = ({ setCurrentScreen, currentUser, userRole }) => {
       const donationsResult = await donationService.getAllDonations();
       const totalDonationsResult = await donationService.getTotalDonations();
       const pendingDonationsResult = await donationService.getPendingDonationsCount();
+
+      const petsResult = await petService.getAllPets();
+      const recentPets = petsResult.success ? petsResult.data.slice(0, 6) : [];
       
       if (petsCountResult.success) {
         const counts = petsCountResult.data;
@@ -468,7 +67,8 @@ const ModernAdminDashboard = ({ setCurrentScreen, currentUser, userRole }) => {
           pendingKaponSchedules: kaponResult.count || 0,
           pendingDonations: pendingDonationsResult.count || 0,
           totalDonations: totalDonationsResult.total || 0,
-          recentDonations: donations.slice(0, 10)
+          recentDonations: donations.slice(0, 10),
+          recentPets: recentPets
         });
         
         console.log('✅ Stats loaded:', counts);
@@ -478,6 +78,7 @@ const ModernAdminDashboard = ({ setCurrentScreen, currentUser, userRole }) => {
         if (petsResult.success) {
           const pets = petsResult.data;
           const donations = donationsResult.success ? donationsResult.data : [];
+          const recentPets = pets.slice(0, 6);
           
           setStats({
             totalPets: pets.length,
@@ -488,7 +89,8 @@ const ModernAdminDashboard = ({ setCurrentScreen, currentUser, userRole }) => {
             pendingKaponSchedules: kaponResult.count || 0,
             pendingDonations: pendingDonationsResult.count || 0,
             totalDonations: totalDonationsResult.total || 0,
-            recentDonations: donations.slice(0, 10)
+            recentDonations: donations.slice(0, 10),
+            recentPets: recentPets
           });
         }
       }
@@ -633,7 +235,7 @@ const ModernAdminDashboard = ({ setCurrentScreen, currentUser, userRole }) => {
           onClick={() => setSidebarOpen(false)}
         />
         
-       {}
+        {}
         <div className={`
           fixed left-0 top-0 h-full w-72 bg-white shadow-2xl z-[70] transform transition-transform duration-300 ease-in-out
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
@@ -690,7 +292,7 @@ const ModernAdminDashboard = ({ setCurrentScreen, currentUser, userRole }) => {
               <NavButton icon={Users} label="Users" tabName="users" />
             </nav>
 
-           {}
+            {}
             {sidebarOpen && (
               <div className="p-4 border-t border-gray-200 bg-gray-50">
                 <div className="text-center">
@@ -781,7 +383,7 @@ const ModernAdminDashboard = ({ setCurrentScreen, currentUser, userRole }) => {
                       />
                     </div>
    
-                   {}
+                    {}
                     <div className="bg-white rounded-xl shadow-md p-4 md:p-6 mb-8">
                       <h3 className="text-xl font-bold text-gray-800 mb-6 text-center">Quick Actions</h3>
                       <div className="flex justify-center">
@@ -844,6 +446,65 @@ const ModernAdminDashboard = ({ setCurrentScreen, currentUser, userRole }) => {
                         </div>
                       </div>
                     </div>
+
+                    {}
+                    {stats.recentPets && stats.recentPets.length > 0 && (
+                      <div className="bg-white rounded-xl shadow-md p-4 md:p-6 mb-8">
+                        <div className="flex items-center justify-between mb-6">
+                          <h3 className="text-xl font-bold text-gray-800">Recent Additions</h3>
+                          <button
+                            onClick={() => setActiveTab('pets')}
+                            className="text-pink-500 hover:text-pink-600 font-semibold text-sm"
+                          >
+                            View All →
+                          </button>
+                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+                          {stats.recentPets.map((pet) => (
+                            <div 
+                              key={pet.id}
+                              onClick={() => setActiveTab('pets')}
+                              className="bg-gray-50 rounded-lg overflow-hidden border border-gray-200 hover:shadow-lg transition-all cursor-pointer group"
+                            >
+                              <div className="relative h-32 bg-gray-200">
+                                <img 
+                                  src={getPetImage(pet.imageUrl)} 
+                                  alt={pet.name}
+                                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                                />
+                                <div className="absolute top-1 right-1">
+                                  {pet.status === 'available' && (
+                                    <span className="bg-green-500 text-white text-xs px-2 py-0.5 rounded-full">
+                                      Available
+                                    </span>
+                                  )}
+                                  {pet.status === 'adopted' && (
+                                    <span className="bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full">
+                                      Adopted
+                                    </span>
+                                  )}
+                                  {pet.status === 'undertreatment' && (
+                                    <span className="bg-orange-500 text-white text-xs px-2 py-0.5 rounded-full">
+                                      Treatment
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="p-2">
+                                <h4 className="font-bold text-sm text-gray-800 truncate">{pet.name}</h4>
+                                <p className="text-xs text-gray-600 truncate">{pet.breed || 'Mixed'}</p>
+                                <div className="flex items-center justify-between mt-1">
+                                  <span className="text-xs text-gray-500">{pet.age || 'N/A'}</span>
+                                  <span className="text-pink-500">
+                                    {pet.gender === 'male' ? '♂' : '♀'}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
 
                     {}
                     <div className="space-y-4">
@@ -1257,4 +918,3 @@ const ModernAdminDashboard = ({ setCurrentScreen, currentUser, userRole }) => {
 };
 
 export default ModernAdminDashboard;
-

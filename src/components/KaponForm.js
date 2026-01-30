@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, MapPin, Clock, ArrowLeft, Check, AlertCircle } from 'lucide-react';
 import { auth, db } from '../config/firebaseConfig';
-import { doc, updateDoc, increment } from 'firebase/firestore';
+import { doc, updateDoc, increment, getDoc } from 'firebase/firestore';
 import kaponService from '../services/kaponService';
 import Header from './Header';
 import BottomNav from './BottomNav';
@@ -29,21 +29,47 @@ const KaponForm = ({
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const user = auth.currentUser;
-    if (user) {
-      setCurrentUser(user);
-      setFormData(prev => ({
-        ...prev,
-        ownerName: user.displayName || ''
-      }));
-    } else {
-      alert('Please login to register for Kapon events');
-      setCurrentScreen('login');
-    }
+    const fetchUserData = async () => {
+      const user = auth.currentUser;
+      if (user) {
+        setCurrentUser(user);
+        
+    
+        try {
+          const userDoc = await getDoc(doc(db, 'users', user.uid));
+          if (userDoc.exists()) {
+            const data = userDoc.data();
+            
+         
+            setFormData(prev => ({
+              ...prev,
+              ownerName: data.fullName || user.displayName || '',
+              contactNumber: data.phoneNumber || ''
+            }));
+          } else {
+          
+            setFormData(prev => ({
+              ...prev,
+              ownerName: user.displayName || user.email?.split('@')[0] || ''
+            }));
+          }
+        } catch (error) {
+          console.error('Error fetching user data:', error);
+          setFormData(prev => ({
+            ...prev,
+            ownerName: user.displayName || user.email?.split('@')[0] || ''
+          }));
+        }
+      } else {
+        alert('Please login to register for Kapon events');
+        setCurrentScreen('login');
+      }
+    };
+    
+    fetchUserData();
   }, [setCurrentScreen]);
 
   useEffect(() => {
-    
     if (selectedSchedule) {
       const remaining = selectedSchedule.capacity - (selectedSchedule.registeredCount || 0);
       setScheduleIsFull(remaining <= 0);
@@ -74,9 +100,19 @@ const KaponForm = ({
       return;
     }
 
-    
     if (selectedSchedule.registeredCount >= selectedSchedule.capacity) {
       setError('Sorry, this schedule is now full. Please choose another date.');
+      return;
+    }
+
+  
+    if (!formData.ownerName) {
+      setError('Your profile is incomplete. Please update your name in your profile settings.');
+      return;
+    }
+
+    if (!formData.contactNumber) {
+      setError('Your profile is incomplete. Please update your phone number in your profile settings.');
       return;
     }
 
@@ -104,29 +140,27 @@ const KaponForm = ({
 
       console.log('Submitting registration:', requestData);
 
-      
       const result = await kaponService.createKaponRequest(requestData);
       
       console.log('Service result:', result);
 
       if (result.success) {
-        
         await updateDoc(doc(db, 'kapon_schedules', selectedSchedule.id), {
           registeredCount: increment(1)
         });
 
         setShowSuccess(true);
         
-        setFormData({
-          ownerName: currentUser.displayName || '',
-          contactNumber: '',
+    
+        setFormData(prev => ({
+          ...prev,
           petName: '',
           petType: 'dog',
           gender: 'male',
           breed: '',
           age: '',
           notes: ''
-        });
+        }));
       } else {
         setError('Error submitting request: ' + (result.error || 'Unknown error'));
       }
@@ -252,6 +286,25 @@ const KaponForm = ({
         )}
 
         {}
+        {(!formData.ownerName || !formData.contactNumber) && (
+          <div className="bg-yellow-50 border-l-4 border-yellow-500 rounded-lg p-4 mb-6 flex items-start gap-3">
+            <AlertCircle className="text-yellow-500 flex-shrink-0 mt-0.5" size={20} />
+            <div>
+              <h3 className="font-semibold text-yellow-800 mb-1">Profile Incomplete</h3>
+              <p className="text-sm text-yellow-700">
+                Please complete your profile with your full name and phone number before registering.
+              </p>
+              <button
+                onClick={() => setCurrentScreen('profile')}
+                className="mt-3 text-sm text-yellow-600 hover:text-yellow-800 font-semibold"
+              >
+                Update Profile →
+              </button>
+            </div>
+          </div>
+        )}
+
+        {}
         <div className="bg-gradient-to-br from-pink-50 to-purple-50 rounded-xl p-6 mb-6 border border-pink-200">
           <h3 className="text-lg font-bold text-pink-600 mb-4">Selected Event</h3>
           <h4 className="text-xl font-bold text-gray-800 mb-3">{selectedSchedule.title}</h4>
@@ -275,7 +328,7 @@ const KaponForm = ({
                 {Math.max(0, selectedSchedule.capacity - (selectedSchedule.registeredCount || 0))} / {selectedSchedule.capacity}
               </span>
             </p>
-          {}
+            {}
             <div className="mt-2 w-full bg-gray-200 rounded-full h-2">
               <div
                 className={`h-2 rounded-full transition-all ${scheduleIsFull ? 'bg-red-500' : 'bg-pink-500'}`}
@@ -303,45 +356,13 @@ const KaponForm = ({
         {}
         {!scheduleIsFull ? (
           <div className="bg-white rounded-xl shadow-md p-6">
-            <h3 className="text-xl font-bold text-gray-800 mb-6">Pet Owner Information</h3>
+            <h3 className="text-xl font-bold text-gray-800 mb-2">Pet Information</h3>
+            <p className="text-sm text-gray-600 mb-6">
+              Registering as: <strong>{formData.ownerName || 'Your Name'}</strong>
+              {formData.contactNumber && ` • ${formData.contactNumber}`}
+            </p>
             
             <form onSubmit={handleSubmit} className="space-y-4">
-              {}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Your Name <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  name="ownerName"
-                  required
-                  value={formData.ownerName}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                  placeholder="Enter your full name"
-                />
-              </div>
-
-              {}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Contact Number <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="tel"
-                  name="contactNumber"
-                  required
-                  value={formData.contactNumber}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                  placeholder="09XX XXX XXXX"
-                />
-              </div>
-
-              <div className="pt-4 border-t border-gray-200">
-                <h4 className="text-lg font-bold text-gray-800 mb-4">Pet Information</h4>
-              </div>
-
               {}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -358,7 +379,7 @@ const KaponForm = ({
                 />
               </div>
 
-               {}
+              {}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Pet Type <span className="text-red-500">*</span>
@@ -443,7 +464,7 @@ const KaponForm = ({
               <div className="pt-4">
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={loading || !formData.ownerName || !formData.contactNumber}
                   className="w-full bg-gradient-to-r from-pink-500 to-purple-500 text-white py-3 rounded-lg font-semibold hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading ? 'Submitting...' : 'Submit Registration'}

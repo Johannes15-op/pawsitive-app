@@ -83,6 +83,7 @@ const HomeScreen = ({
   const [currentUser, setCurrentUser] = useState(null);
   const [userPhotoURL, setUserPhotoURL] = useState(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState('all');
 
   useEffect(() => {
     loadPets();
@@ -211,6 +212,20 @@ const HomeScreen = ({
   };
 
   const isFavorite = (petId) => favorites.includes(petId);
+
+  const categories = [
+    { id: 'all', label: 'All', icon: '🐾' },
+    { id: 'dog', label: 'Dogs', icon: '🐕' },
+    { id: 'cat', label: 'Cats', icon: '🐈' }
+  ];
+
+  const filteredPets = selectedCategory === 'all' 
+    ? pets 
+    : pets.filter(pet => {
+        const petSpecies = pet.species?.toLowerCase() || pet.type?.toLowerCase() || '';
+        console.log('Pet:', pet.name, 'Species:', pet.species, 'Type:', pet.type, 'Comparing to:', selectedCategory);
+        return petSpecies === selectedCategory || petSpecies === selectedCategory + 's';
+      });
 
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
@@ -381,6 +396,26 @@ const HomeScreen = ({
         {}
         <AnnouncementBanner />
 
+        {}
+        <div className="mb-4">
+          <div className="flex space-x-2 overflow-x-auto pb-2">
+            {categories.map((category) => (
+              <button
+                key={category.id}
+                onClick={() => setSelectedCategory(category.id)}
+                className={`flex items-center space-x-2 px-4 py-2 rounded-full whitespace-nowrap transition-colors ${
+                  selectedCategory === category.id
+                    ? 'bg-pink-500 text-white shadow-md'
+                    : 'bg-white text-gray-700 border border-gray-200 hover:border-pink-300'
+                }`}
+              >
+                <span>{category.icon}</span>
+                <span className="text-sm font-semibold">{category.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div className="bg-pink-100 rounded-lg p-4 mb-4 relative overflow-hidden">
           <div className="absolute right-2 top-2 w-16 h-16 bg-pink-200 rounded-full flex items-center justify-center">
             <Heart className="text-pink-500 fill-current" size={24} />
@@ -475,60 +510,71 @@ const HomeScreen = ({
           </div>
         ) : (
           <>
-            <h2 className="text-lg font-bold text-gray-800 mb-3">Available Pets</h2>
-            <div className="grid grid-cols-2 gap-4">
-              {pets.map((pet) => (
-                <div key={pet.id} className="bg-white rounded-lg shadow-sm overflow-hidden">
-                  <div className="relative">
-                    <img 
-                      src={getPetImage(pet.imageUrl)} 
-                      alt={pet.name}
-                      className="aspect-square w-full object-cover"
-                    />
-                    {pet.isVaccinated && (
-                      <div className="absolute top-2 left-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full">
-                        ✓ Vaccinated
-                      </div>
-                    )}
-                  </div>
-                  <div className="p-3">
-                    <div className="flex items-center justify-between mb-1">
-                      <h4 className="font-semibold text-gray-800">{pet.name}</h4>
-                      <div className="flex space-x-1 items-center">
-                        <button 
-                          onClick={(e) => toggleFavorite(e, pet.id)}
-                          className="focus:outline-none relative group"
-                          title={isFavorite(pet.id) ? "Remove from favorites" : "Add to favorites"}
-                        >
-                          <Heart 
-                            size={16} 
-                            className={isFavorite(pet.id) ? "text-pink-500 fill-pink-500" : "text-gray-300"} 
-                          />
-                        </button>
-                        <span className="text-pink-500" style={{ fontSize: '14px' }}>
-                          {pet.gender === 'male' ? '♂️' : '♀️'}
-                        </span>
-                      </div>
-                    </div>
-                    <p className="text-xs text-gray-500 mb-1">{pet.age} • {pet.breed}</p>
-                    <div className="flex space-x-2">
-                      <button 
-                        onClick={() => handlePetClick(pet)}
-                        className="flex-1 bg-gray-100 text-gray-700 py-1 px-2 rounded text-xs hover:bg-gray-200"
-                      >
-                        View
-                      </button>
-                      <button 
-                        onClick={(e) => handleAdoptClick(e, pet)}
-                        className="flex-1 bg-pink-500 text-white py-1 px-2 rounded text-xs hover:bg-pink-600"
-                      >
-                        Adopt
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-lg font-bold text-gray-800">Available Pets</h2>
+              <span className="text-sm text-gray-500">
+                {filteredPets.length} {filteredPets.length === 1 ? 'pet' : 'pets'}
+              </span>
             </div>
+            {filteredPets.length === 0 ? (
+              <div className="text-center py-12 bg-gray-50 rounded-lg">
+                <p className="text-gray-500">No {selectedCategory === 'all' ? '' : categories.find(c => c.id === selectedCategory)?.label.toLowerCase()} found.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-4">
+                {filteredPets.map((pet) => (
+                  <div key={pet.id} className="bg-white rounded-lg shadow-sm overflow-hidden">
+                    <div className="relative">
+                      <img 
+                        src={getPetImage(pet.imageUrl)} 
+                        alt={pet.name}
+                        className="aspect-square w-full object-cover"
+                      />
+                      {pet.isVaccinated && (
+                        <div className="absolute top-2 left-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full">
+                          ✓ Vaccinated
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-3">
+                      <div className="flex items-center justify-between mb-1">
+                        <h4 className="font-semibold text-gray-800">{pet.name}</h4>
+                        <div className="flex space-x-1 items-center">
+                          <button 
+                            onClick={(e) => toggleFavorite(e, pet.id)}
+                            className="focus:outline-none relative group"
+                            title={isFavorite(pet.id) ? "Remove from favorites" : "Add to favorites"}
+                          >
+                            <Heart 
+                              size={16} 
+                              className={isFavorite(pet.id) ? "text-pink-500 fill-pink-500" : "text-gray-300"} 
+                            />
+                          </button>
+                          <span className="text-pink-500" style={{ fontSize: '14px' }}>
+                            {pet.gender === 'male' ? '♂️' : '♀️'}
+                          </span>
+                        </div>
+                      </div>
+                      <p className="text-xs text-gray-500 mb-1">{pet.age} • {pet.breed}</p>
+                      <div className="flex space-x-2">
+                        <button 
+                          onClick={() => handlePetClick(pet)}
+                          className="flex-1 bg-gray-100 text-gray-700 py-1 px-2 rounded text-xs hover:bg-gray-200"
+                        >
+                          View
+                        </button>
+                        <button 
+                          onClick={(e) => handleAdoptClick(e, pet)}
+                          className="flex-1 bg-pink-500 text-white py-1 px-2 rounded text-xs hover:bg-pink-600"
+                        >
+                          Adopt
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </>
         )}
       </div>

@@ -50,6 +50,13 @@ const getPetImage = (imageUrl) => {
   return imageUrl;
 };
 
+const formatMedicalRecords = (records) => {
+  if (records == null) return null;
+  if (Array.isArray(records)) return records.join('\n');
+  if (typeof records === 'object') return JSON.stringify(records, null, 2);
+  return String(records);
+};
+
 const PetDetailScreen = ({ 
   pet, 
   setCurrentScreen, 
@@ -153,6 +160,56 @@ const PetDetailScreen = ({
             <p className="text-sm text-gray-700 mt-4 mb-4">
               {pet.description || pet.story || `${pet.name} is looking for a loving home. This adorable pet has so much love to give and would make a wonderful companion.`}
             </p>
+
+           {}
+            {(pet.medicalHistory || pet.medicalRecords || pet.medicalRecord) && (
+              <div className="mt-4 mb-4">
+                <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 border-2 border-blue-200">
+                  <div className="flex items-center gap-2 mb-3">
+                    <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <h4 className="text-sm font-bold text-gray-800">Medical Records & History</h4>
+                  </div>
+                  
+                  <div className="bg-white rounded-lg p-3 border border-blue-200">
+                    <div className="space-y-2">
+                      {(() => {
+                        const medicalData = pet.medicalHistory || pet.medicalRecords || pet.medicalRecord;
+                        const formattedData = formatMedicalRecords(medicalData);
+                        
+                        if (!formattedData) return null;
+                        
+                        return formattedData.split('\n').map((line, index) => {
+                          if (!line.trim()) return null;
+                          
+                       
+                          const isBullet = line.trim().startsWith('-') || line.trim().startsWith('•');
+                          const cleanLine = isBullet ? line.trim().substring(1).trim() : line.trim();
+                          
+                          return (
+                            <div key={index} className="flex items-start gap-2">
+                              {isBullet && (
+                                <span className="text-blue-600 mt-0.5 flex-shrink-0">•</span>
+                              )}
+                              <p className="text-sm text-gray-700 leading-relaxed">
+                                {cleanLine}
+                              </p>
+                            </div>
+                          );
+                        });
+                      })()}
+                    </div>
+                  </div>
+                  
+                  <div className="mt-2 bg-blue-50 rounded p-2 border border-blue-200">
+                    <p className="text-xs text-blue-800">
+                      <strong>ℹ️ Note:</strong> Medical history provided by the shelter
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
 
             <button 
               onClick={handleAdoptNow}

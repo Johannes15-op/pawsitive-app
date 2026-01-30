@@ -1,5 +1,6 @@
-import { collection, addDoc, Timestamp, query, where, getDocs, updateDoc, doc } from 'firebase/firestore';
+import { collection, addDoc, Timestamp, query, where, getDocs, updateDoc, doc, getDoc } from 'firebase/firestore';
 import { db, auth } from '../config/firebaseConfig';
+import notificationService from './notificationService';
 
 const volunteerService = {
   
@@ -16,28 +17,31 @@ const volunteerService = {
       const volunteerRef = collection(db, 'volunteerRequests');
       
       const docRef = await addDoc(volunteerRef, {
-       
+    
         userId: currentUser.uid,
         userEmail: currentUser.email || formData.email,
         userName: `${formData.firstName} ${formData.lastName}`,
         firstName: formData.firstName,
         lastName: formData.lastName,
-        
 
         email: formData.email,
         phone: formData.phone,
         dateOfBirth: formData.dateOfBirth || null,
-        
-       
+ 
+        hasVolunteerExperience: formData.hasVolunteerExperience || '',
+        volunteerExperienceDescription: formData.volunteerExperienceDescription || '',
+        hasAnimalExperience: formData.hasAnimalExperience || '',
+        specialSkills: formData.specialSkills || '',
         motivation: formData.motivation,
+        
+    
         volunteerType: formData.volunteerType || 'General', 
         
-        
+ 
         status: 'pending', 
         createdAt: Timestamp.fromDate(new Date()),
         updatedAt: Timestamp.fromDate(new Date()),
         
-       
         totalHoursCompleted: 0,
         isVerified: false
       });
@@ -58,7 +62,6 @@ const volunteerService = {
     }
   },
 
-  
   getUserVolunteerRequests: async (userId) => {
     try {
       const volunteerRef = collection(db, 'volunteerRequests');
@@ -70,7 +73,6 @@ const volunteerService = {
       return [];
     }
   },
-
 
   getPendingVolunteerCount: async (userId) => {
     try {
@@ -88,7 +90,6 @@ const volunteerService = {
     }
   },
 
- 
   getApprovedVolunteerCount: async (userId) => {
     try {
       const volunteerRef = collection(db, 'volunteerRequests');
@@ -104,7 +105,6 @@ const volunteerService = {
       return 0;
     }
   },
-
 
   updateVolunteerStatus: async (volunteerId, newStatus, adminNotes = '') => {
     try {
@@ -132,7 +132,6 @@ const volunteerService = {
     }
   },
 
- 
   getAllApplications: async () => {
     try {
       const volunteerRef = collection(db, 'volunteerRequests');
@@ -152,12 +151,21 @@ const volunteerService = {
     }
   },
 
- 
+
   updateStatus: async (volunteerId, newStatus, adminNotes = '') => {
     try {
-      const volunteerDoc = doc(db, 'volunteerRequests', volunteerId);
+
+      const volunteerDocRef = doc(db, 'volunteerRequests', volunteerId);
+      const volunteerSnapshot = await getDoc(volunteerDocRef);
       
-      await updateDoc(volunteerDoc, {
+      if (!volunteerSnapshot.exists()) {
+        throw new Error('Volunteer application not found');
+      }
+      
+      const volunteerData = volunteerSnapshot.data();
+      
+
+      await updateDoc(volunteerDocRef, {
         status: newStatus,
         updatedAt: Timestamp.fromDate(new Date()),
         adminNotes: adminNotes,
@@ -165,6 +173,48 @@ const volunteerService = {
       });
 
       console.log('✅ Volunteer status updated to:', newStatus);
+      
+ 
+      if (volunteerData.userId) {
+        let notificationData = null;
+        
+        if (newStatus === 'approved') {
+          notificationData = {
+            userId: volunteerData.userId,
+            type: 'volunteer',
+            title: '🎉 Volunteer Application Approved!',
+            message: `Congratulations ${volunteerData.firstName}! Your volunteer application has been approved. Our volunteer coordinator will contact you soon with more details about your role and next steps.`,
+            relatedId: volunteerId,
+            metadata: {
+              applicantName: `${volunteerData.firstName} ${volunteerData.lastName}`,
+              status: 'approved'
+            }
+          };
+        } else if (newStatus === 'rejected') {
+          notificationData = {
+            userId: volunteerData.userId,
+            type: 'volunteer',
+            title: '📋 Volunteer Application Update',
+            message: `Thank you for your interest in volunteering with us, ${volunteerData.firstName}. Unfortunately, we are unable to approve your application at this time.${adminNotes ? ' Note: ' + adminNotes : ''} We appreciate your interest and encourage you to apply again in the future.`,
+            relatedId: volunteerId,
+            metadata: {
+              applicantName: `${volunteerData.firstName} ${volunteerData.lastName}`,
+              status: 'rejected',
+              adminNotes: adminNotes
+            }
+          };
+        }
+ 
+        if (notificationData) {
+          const notifResult = await notificationService.createNotification(notificationData);
+          
+          if (notifResult.success) {
+            console.log('✅ Notification sent to user:', volunteerData.userId);
+          } else {
+            console.error('❌ Failed to send notification:', notifResult.error);
+          }
+        }
+      }
       
       return {
         success: true,
@@ -179,7 +229,6 @@ const volunteerService = {
     }
   },
 
- 
   getPendingCount: async () => {
     try {
       const volunteerRef = collection(db, 'volunteerRequests');

@@ -1,5 +1,6 @@
 import React from 'react';
 import { Heart } from 'lucide-react';
+import NotificationBell from './NotificationBell';
 
 const Header = ({ title, setCurrentScreen, setShowSidebar }) => {
   return (
@@ -21,7 +22,7 @@ const Header = ({ title, setCurrentScreen, setShowSidebar }) => {
       </div>
 
       {}
-      <div className="w-10"></div>
+      <NotificationBell setCurrentScreen={setCurrentScreen} />
     </div>
   );
 };

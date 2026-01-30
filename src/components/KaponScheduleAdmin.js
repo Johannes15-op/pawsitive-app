@@ -10,6 +10,9 @@ const KaponScheduleAdmin = () => {
   const [registrations, setRegistrations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [registrationsPage, setRegistrationsPage] = useState(1);
+  const itemsPerPage = 5;
   const [formData, setFormData] = useState({
     title: '',
     date: '',
@@ -18,7 +21,7 @@ const KaponScheduleAdmin = () => {
     location: '',
     description: '',
     capacity: 50,
-    requirements: ''
+    requirements: ''  
   });
 
   useEffect(() => {
@@ -31,6 +34,7 @@ const KaponScheduleAdmin = () => {
       const result = await kaponService.getAllSchedules();
       if (result.success) {
         setSchedules(result.data);
+        setCurrentPage(1);
       }
     } catch (error) {
       console.error('Error loading schedules:', error);
@@ -43,6 +47,7 @@ const KaponScheduleAdmin = () => {
       const result = await kaponService.getScheduleRegistrations(scheduleId);
       if (result.success) {
         setRegistrations(result.data);
+        setRegistrationsPage(1);
       }
     } catch (error) {
       console.error('Error loading registrations:', error);
@@ -255,6 +260,90 @@ const KaponScheduleAdmin = () => {
     return badges[status] || 'bg-gray-100 text-gray-800';
   };
 
+
+  const indexOfLastSchedule = currentPage * itemsPerPage;
+  const indexOfFirstSchedule = indexOfLastSchedule - itemsPerPage;
+  const currentSchedules = schedules.slice(indexOfFirstSchedule, indexOfLastSchedule);
+  const totalSchedulePages = Math.ceil(schedules.length / itemsPerPage);
+
+ 
+  const indexOfLastRegistration = registrationsPage * itemsPerPage;
+  const indexOfFirstRegistration = indexOfLastRegistration - itemsPerPage;
+  const currentRegistrations = registrations.slice(indexOfFirstRegistration, indexOfLastRegistration);
+  const totalRegistrationPages = Math.ceil(registrations.length / itemsPerPage);
+
+  const PaginationControls = ({ currentPage, totalPages, onPageChange }) => {
+    if (totalPages <= 1) return null;
+
+    const getPageNumbers = () => {
+      const pages = [];
+      const maxVisible = 5;
+      
+      if (totalPages <= maxVisible) {
+        for (let i = 1; i <= totalPages; i++) {
+          pages.push(i);
+        }
+      } else {
+        if (currentPage <= 3) {
+          for (let i = 1; i <= 4; i++) pages.push(i);
+          pages.push('...');
+          pages.push(totalPages);
+        } else if (currentPage >= totalPages - 2) {
+          pages.push(1);
+          pages.push('...');
+          for (let i = totalPages - 3; i <= totalPages; i++) pages.push(i);
+        } else {
+          pages.push(1);
+          pages.push('...');
+          pages.push(currentPage - 1);
+          pages.push(currentPage);
+          pages.push(currentPage + 1);
+          pages.push('...');
+          pages.push(totalPages);
+        }
+      }
+      return pages;
+    };
+
+    return (
+      <div className="flex items-center justify-center gap-2 mt-6 flex-wrap">
+        <button
+          onClick={() => onPageChange(currentPage - 1)}
+          disabled={currentPage === 1}
+          className="px-3 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium"
+        >
+          Previous
+        </button>
+        
+        {getPageNumbers().map((page, index) => (
+          page === '...' ? (
+            <span key={`ellipsis-${index}`} className="px-2 text-gray-500">...</span>
+          ) : (
+            <button
+              key={page}
+              onClick={() => onPageChange(page)}
+              className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                currentPage === page
+                  ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white'
+                  : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              {page}
+            </button>
+          )
+        ))}
+        
+        <button
+          onClick={() => onPageChange(currentPage + 1)}
+          disabled={currentPage === totalPages}
+          className="px-3 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium"
+        >
+          Next
+        </button>
+      </div>
+    );
+  };
+
   return (
     <div>
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
@@ -435,70 +524,78 @@ const KaponScheduleAdmin = () => {
               </button>
             </div>
           ) : (
-            schedules.map((schedule) => (
-              <div key={schedule.id} className="bg-white rounded-xl shadow-md p-4 md:p-6 hover:shadow-lg transition-shadow">
-                <div className="flex flex-col gap-3 mb-4">
-                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-lg md:text-xl font-bold text-gray-800 mb-2 break-words">
-                        {schedule.title}
-                      </h3>
-                      <p className="text-sm text-gray-600 break-words line-clamp-2">
-                        {schedule.description}
-                      </p>
+            <>
+              {currentSchedules.map((schedule) => (
+                <div key={schedule.id} className="bg-white rounded-xl shadow-md p-4 md:p-6 hover:shadow-lg transition-shadow">
+                  <div className="flex flex-col gap-3 mb-4">
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-lg md:text-xl font-bold text-gray-800 mb-2 break-words">
+                          {schedule.title}
+                        </h3>
+                        <p className="text-sm text-gray-600 break-words line-clamp-2">
+                          {schedule.description}
+                        </p>
+                      </div>
+                      <span className={`${getStatusBadge(schedule.status)} px-3 py-1 rounded-full text-xs font-semibold uppercase whitespace-nowrap self-start`}>
+                        {schedule.status}
+                      </span>
                     </div>
-                    <span className={`${getStatusBadge(schedule.status)} px-3 py-1 rounded-full text-xs font-semibold uppercase whitespace-nowrap self-start`}>
-                      {schedule.status}
-                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 mb-4">
+                    <div className="flex items-center gap-2 text-gray-700">
+                      <Calendar size={18} className="text-pink-500 flex-shrink-0" />
+                      <span className="text-sm break-words">{formatDate(schedule.date)}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-gray-700">
+                      <Clock size={18} className="text-pink-500 flex-shrink-0" />
+                      <span className="text-sm">{schedule.startTime} - {schedule.endTime}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-gray-700">
+                      <MapPin size={18} className="text-pink-500 flex-shrink-0" />
+                      <span className="text-sm break-words">{schedule.location}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 text-sm text-gray-600 mb-4 pb-4 border-b border-gray-200">
+                    <Users size={18} className="text-purple-500 flex-shrink-0" />
+                    <span>{schedule.registeredCount || 0} / {schedule.capacity} registered</span>
+                  </div>
+
+                  {schedule.requirements && (
+                    <div className="mb-4 p-3 bg-blue-50 rounded-lg">
+                      <p className="text-xs font-semibold text-blue-800 mb-1">Requirements:</p>
+                      <p className="text-xs text-gray-700 whitespace-pre-line break-words">{schedule.requirements}</p>
+                    </div>
+                  )}
+
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={() => handleViewRegistrations(schedule)}
+                      className="flex items-center gap-1.5 px-3 md:px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm font-medium"
+                    >
+                      <Eye size={16} />
+                      <span>View Registrations</span>
+                    </button>
+
+                    <button
+                      onClick={() => handleDeleteSchedule(schedule.id)}
+                      className="flex items-center gap-1.5 px-3 md:px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors text-sm font-medium sm:ml-auto"
+                    >
+                      <Trash2 size={16} />
+                      <span className="hidden sm:inline">Delete</span>
+                    </button>
                   </div>
                 </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 mb-4">
-                  <div className="flex items-center gap-2 text-gray-700">
-                    <Calendar size={18} className="text-pink-500 flex-shrink-0" />
-                    <span className="text-sm break-words">{formatDate(schedule.date)}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-gray-700">
-                    <Clock size={18} className="text-pink-500 flex-shrink-0" />
-                    <span className="text-sm">{schedule.startTime} - {schedule.endTime}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-gray-700">
-                    <MapPin size={18} className="text-pink-500 flex-shrink-0" />
-                    <span className="text-sm break-words">{schedule.location}</span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 text-sm text-gray-600 mb-4 pb-4 border-b border-gray-200">
-                  <Users size={18} className="text-purple-500 flex-shrink-0" />
-                  <span>{schedule.registeredCount || 0} / {schedule.capacity} registered</span>
-                </div>
-
-                {schedule.requirements && (
-                  <div className="mb-4 p-3 bg-blue-50 rounded-lg">
-                    <p className="text-xs font-semibold text-blue-800 mb-1">Requirements:</p>
-                    <p className="text-xs text-gray-700 whitespace-pre-line break-words">{schedule.requirements}</p>
-                  </div>
-                )}
-
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    onClick={() => handleViewRegistrations(schedule)}
-                    className="flex items-center gap-1.5 px-3 md:px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm font-medium"
-                  >
-                    <Eye size={16} />
-                    <span>View Registrations</span>
-                  </button>
-
-                  <button
-                    onClick={() => handleDeleteSchedule(schedule.id)}
-                    className="flex items-center gap-1.5 px-3 md:px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors text-sm font-medium sm:ml-auto"
-                  >
-                    <Trash2 size={16} />
-                    <span className="hidden sm:inline">Delete</span>
-                  </button>
-                </div>
-              </div>
-            ))
+              ))}
+              
+              <PaginationControls 
+                currentPage={currentPage}
+                totalPages={totalSchedulePages}
+                onPageChange={setCurrentPage}
+              />
+            </>
           )}
         </div>
       )}
@@ -510,7 +607,7 @@ const KaponScheduleAdmin = () => {
               onClick={() => setActiveView('schedules')}
               className="text-pink-500 hover:text-pink-600 mb-4 flex items-center gap-1 font-medium"
             >
-              Back to Schedules
+              ← Back to Schedules
             </button>
             <h3 className="text-xl font-bold text-gray-800 mb-2 break-words">{selectedSchedule.title}</h3>
             <p className="text-gray-600 text-sm mb-4 break-words">
@@ -530,95 +627,103 @@ const KaponScheduleAdmin = () => {
                 <p className="text-gray-500">Waiting for users to register for this event.</p>
               </div>
             ) : (
-              registrations.map((registration) => (
-                <div key={registration.id} className="bg-white rounded-xl shadow-md p-4 md:p-6">
-                  <div className="flex flex-col gap-4">
-                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-                      <div className="flex-1 min-w-0">
-                        <h4 className="font-bold text-gray-800 mb-1 break-words">{registration.ownerName}</h4>
-                        <p className="text-sm text-gray-600 mb-1 break-words">{registration.userEmail}</p>
-                        <p className="text-sm text-gray-600 break-words">{registration.contactNumber}</p>
-                        
-                        <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-                          <p className="text-sm font-semibold text-gray-700 mb-2">Pet Information:</p>
-                          <div className="space-y-1">
-                            <p className="text-sm text-gray-600">Name: {registration.petName}</p>
-                            <p className="text-sm text-gray-600">Type: {registration.petType}</p>
-                            <p className="text-sm text-gray-600">Gender: {registration.gender}</p>
-                            <p className="text-sm text-gray-600">Breed: {registration.breed}</p>
-                            <p className="text-sm text-gray-600">Age: {registration.age}</p>
+              <>
+                {currentRegistrations.map((registration) => (
+                  <div key={registration.id} className="bg-white rounded-xl shadow-md p-4 md:p-6">
+                    <div className="flex flex-col gap-4">
+                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-bold text-gray-800 mb-1 break-words">{registration.ownerName}</h4>
+                          <p className="text-sm text-gray-600 mb-1 break-words">{registration.userEmail}</p>
+                          <p className="text-sm text-gray-600 break-words">{registration.contactNumber}</p>
+                          
+                          <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                            <p className="text-sm font-semibold text-gray-700 mb-2">Pet Information:</p>
+                            <div className="space-y-1">
+                              <p className="text-sm text-gray-600">Name: {registration.petName}</p>
+                              <p className="text-sm text-gray-600">Type: {registration.petType}</p>
+                              <p className="text-sm text-gray-600">Gender: {registration.gender}</p>
+                              <p className="text-sm text-gray-600">Breed: {registration.breed}</p>
+                              <p className="text-sm text-gray-600">Age: {registration.age}</p>
+                            </div>
                           </div>
+
+                          {registration.notes && (
+                            <div className="mt-3 p-3 bg-blue-50 rounded-lg">
+                              <p className="text-xs font-semibold text-blue-800 mb-1">Additional Notes:</p>
+                              <p className="text-xs text-gray-700 break-words">{registration.notes}</p>
+                            </div>
+                          )}
                         </div>
 
-                        {registration.notes && (
-                          <div className="mt-3 p-3 bg-blue-50 rounded-lg">
-                            <p className="text-xs font-semibold text-blue-800 mb-1">Additional Notes:</p>
-                            <p className="text-xs text-gray-700 break-words">{registration.notes}</p>
-                          </div>
-                        )}
+                        <div className="flex-shrink-0 self-start">
+                          <span className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${
+                            registration.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                            registration.status === 'approved' ? 'bg-green-100 text-green-800' :
+                            registration.status === 'completed' ? 'bg-blue-100 text-blue-800' :
+                            'bg-red-100 text-red-800'
+                          }`}>
+                            {registration.status.toUpperCase()}
+                          </span>
+                        </div>
                       </div>
 
-                      <div className="flex-shrink-0 self-start">
-                        <span className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${
-                          registration.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                          registration.status === 'approved' ? 'bg-green-100 text-green-800' :
-                          registration.status === 'completed' ? 'bg-blue-100 text-blue-800' :
-                          'bg-red-100 text-red-800'
-                        }`}>
-                          {registration.status.toUpperCase()}
-                        </span>
-                      </div>
+                      {registration.status === 'pending' && (
+                        <div className="flex flex-wrap gap-2 pt-4 border-t border-gray-200">
+                          <button
+                            onClick={() => handleApproveRequest(registration.id, registration)}
+                            disabled={actionLoading === registration.id}
+                            className="flex items-center gap-1.5 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium"
+                          >
+                            <Check size={16} />
+                            <span>{actionLoading === registration.id ? 'Processing...' : 'Approve'}</span>
+                          </button>
+                          <button
+                            onClick={() => handleRejectRequest(registration.id, registration)}
+                            disabled={actionLoading === registration.id}
+                            className="flex items-center gap-1.5 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium"
+                          >
+                            <X size={16} />
+                            <span>{actionLoading === registration.id ? 'Processing...' : 'Reject'}</span>
+                          </button>
+                        </div>
+                      )}
+
+                      {registration.status === 'approved' && (
+                        <div className="flex flex-wrap gap-2 pt-4 border-t border-gray-200">
+                          <button
+                            onClick={() => handleCompleteRequest(registration.id)}
+                            disabled={actionLoading === registration.id}
+                            className="flex items-center gap-1.5 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium"
+                          >
+                            <Check size={16} />
+                            <span>{actionLoading === registration.id ? 'Processing...' : 'Mark as Completed'}</span>
+                          </button>
+                        </div>
+                      )}
+
+                      {registration.adminNotes && (
+                        <div className="mt-3 p-3 bg-yellow-50 rounded-lg border-t border-gray-200">
+                          <p className="text-xs font-semibold text-yellow-800 mb-1">Admin Notes:</p>
+                          <p className="text-xs text-gray-700 break-words">{registration.adminNotes}</p>
+                        </div>
+                      )}
+
+                      {registration.createdAt && (
+                        <div className="pt-3 border-t border-gray-200 text-xs text-gray-500">
+                          Registered: {registration.createdAt.toDate ? registration.createdAt.toDate().toLocaleString() : new Date(registration.createdAt).toLocaleString()}
+                        </div>
+                      )}
                     </div>
-
-                    {registration.status === 'pending' && (
-                      <div className="flex flex-wrap gap-2 pt-4 border-t border-gray-200">
-                        <button
-                          onClick={() => handleApproveRequest(registration.id, registration)}
-                          disabled={actionLoading === registration.id}
-                          className="flex items-center gap-1.5 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium"
-                        >
-                          <Check size={16} />
-                          <span>{actionLoading === registration.id ? 'Processing...' : 'Approve'}</span>
-                        </button>
-                        <button
-                          onClick={() => handleRejectRequest(registration.id, registration)}
-                          disabled={actionLoading === registration.id}
-                          className="flex items-center gap-1.5 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium"
-                        >
-                          <X size={16} />
-                          <span>{actionLoading === registration.id ? 'Processing...' : 'Reject'}</span>
-                        </button>
-                      </div>
-                    )}
-
-                    {registration.status === 'approved' && (
-                      <div className="flex flex-wrap gap-2 pt-4 border-t border-gray-200">
-                        <button
-                          onClick={() => handleCompleteRequest(registration.id)}
-                          disabled={actionLoading === registration.id}
-                          className="flex items-center gap-1.5 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium"
-                        >
-                          <Check size={16} />
-                          <span>{actionLoading === registration.id ? 'Processing...' : 'Mark as Completed'}</span>
-                        </button>
-                      </div>
-                    )}
-
-                    {registration.adminNotes && (
-                      <div className="mt-3 p-3 bg-yellow-50 rounded-lg border-t border-gray-200">
-                        <p className="text-xs font-semibold text-yellow-800 mb-1">Admin Notes:</p>
-                        <p className="text-xs text-gray-700 break-words">{registration.adminNotes}</p>
-                      </div>
-                    )}
-
-                    {registration.createdAt && (
-                      <div className="pt-3 border-t border-gray-200 text-xs text-gray-500">
-                        Registered: {registration.createdAt.toDate ? registration.createdAt.toDate().toLocaleString() : new Date(registration.createdAt).toLocaleString()}
-                      </div>
-                    )}
                   </div>
-                </div>
-              ))
+                ))}
+                
+                <PaginationControls 
+                  currentPage={registrationsPage}
+                  totalPages={totalRegistrationPages}
+                  onPageChange={setRegistrationsPage}
+                />
+              </>
             )}
           </div>
         </div>

@@ -5,11 +5,10 @@ import volunteerService from '../services/volunteerService';
 
 const VolunteerScreen = ({ currentScreen, setCurrentScreen, setShowSidebar, currentUser }) => {
   const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    dateOfBirth: '',
-    email: '',
-    phone: '',
+    hasVolunteerExperience: '',
+    volunteerExperienceDescription: '',
+    hasAnimalExperience: '',
+    specialSkills: '',
     motivation: ''
   });
   const [submitting, setSubmitting] = useState(false);
@@ -56,11 +55,21 @@ const VolunteerScreen = ({ currentScreen, setCurrentScreen, setShowSidebar, curr
   ];
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    const { name, value, type } = e.target;
+    
+ 
+    if (type === 'radio' && name === 'hasVolunteerExperience' && value === 'no') {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value,
+        volunteerExperienceDescription: ''
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -75,34 +84,39 @@ const VolunteerScreen = ({ currentScreen, setCurrentScreen, setShowSidebar, curr
     }
     
    
-    if (!formData.firstName || !formData.lastName || !formData.email || !formData.phone || !formData.motivation) {
+    if (!formData.hasVolunteerExperience || !formData.hasAnimalExperience || !formData.motivation) {
       setError('Please fill in all required fields');
       alert('Please fill in all required fields');
       return;
     }
 
-   
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.email)) {
-      setError('Please enter a valid email address');
-      alert('Please enter a valid email address');
-      return;
-    }
-
     setSubmitting(true);
 
-    const result = await volunteerService.submitApplication(formData);
+
+    const applicationData = {
+  
+      firstName: currentUser.firstName || '',
+      lastName: currentUser.lastName || '',
+      email: currentUser.email || '',
+      phone: currentUser.phone || '',
+      dateOfBirth: currentUser.dateOfBirth || '',
+  
+      ...formData
+    };
+
+    console.log('📝 Submitting application data:', applicationData);
+
+    const result = await volunteerService.submitApplication(applicationData);
 
     if (result.success) {
       alert('Thank you for applying! Your application has been submitted successfully. Our volunteer coordinator will contact you soon.');
       
       
       setFormData({
-        firstName: '',
-        lastName: '',
-        dateOfBirth: '',
-        email: '',
-        phone: '',
+        hasVolunteerExperience: '',
+        volunteerExperienceDescription: '',
+        hasAnimalExperience: '',
+        specialSkills: '',
         motivation: ''
       });
       
@@ -136,7 +150,7 @@ const VolunteerScreen = ({ currentScreen, setCurrentScreen, setShowSidebar, curr
             </div>
           )}
 
-             {}   
+          {}   
           <div className="mb-6">
             <div className="w-full h-48 bg-gradient-to-br from-pink-100 to-purple-200 flex items-center justify-center rounded-lg mb-4 shadow-sm">
               <div className="text-center">
@@ -186,65 +200,118 @@ const VolunteerScreen = ({ currentScreen, setCurrentScreen, setShowSidebar, curr
           
           {}
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <input 
-                name="firstName"
-                value={formData.firstName}
+            {}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Do you have previous volunteer experience? *
+              </label>
+              <div className="flex gap-4">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="hasVolunteerExperience"
+                    value="yes"
+                    checked={formData.hasVolunteerExperience === 'yes'}
+                    onChange={handleInputChange}
+                    required
+                    disabled={!currentUser || submitting}
+                    className="w-4 h-4 text-pink-500 focus:ring-pink-400 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                  />
+                  <span className="text-sm text-gray-700">Yes</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="hasVolunteerExperience"
+                    value="no"
+                    checked={formData.hasVolunteerExperience === 'no'}
+                    onChange={handleInputChange}
+                    required
+                    disabled={!currentUser || submitting}
+                    className="w-4 h-4 text-pink-500 focus:ring-pink-400 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                  />
+                  <span className="text-sm text-gray-700">No</span>
+                </label>
+              </div>
+              {formData.hasVolunteerExperience === 'yes' && (
+                <textarea
+                  name="volunteerExperienceDescription"
+                  value={formData.volunteerExperienceDescription}
+                  onChange={handleInputChange}
+                  placeholder="Please describe your volunteer experience"
+                  rows="3"
+                  disabled={!currentUser || submitting}
+                  className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg resize-none focus:ring-2 focus:ring-pink-400 focus:bg-white focus:outline-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                />
+              )}
+            </div>
+
+            {}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Do you have experience handling animals? *
+              </label>
+              <div className="flex gap-4">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="hasAnimalExperience"
+                    value="yes"
+                    checked={formData.hasAnimalExperience === 'yes'}
+                    onChange={handleInputChange}
+                    required
+                    disabled={!currentUser || submitting}
+                    className="w-4 h-4 text-pink-500 focus:ring-pink-400 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                  />
+                  <span className="text-sm text-gray-700">Yes</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="hasAnimalExperience"
+                    value="no"
+                    checked={formData.hasAnimalExperience === 'no'}
+                    onChange={handleInputChange}
+                    required
+                    disabled={!currentUser || submitting}
+                    className="w-4 h-4 text-pink-500 focus:ring-pink-400 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                  />
+                  <span className="text-sm text-gray-700">No</span>
+                </label>
+              </div>
+            </div>
+
+            {}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Special skills (e.g., graphic design, writing, first aid, etc.)
+              </label>
+              <input
+                name="specialSkills"
+                value={formData.specialSkills}
                 onChange={handleInputChange}
-                placeholder="First Name *" 
-                required
+                placeholder="List any special skills you have"
                 disabled={!currentUser || submitting}
-                className="p-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-pink-400 focus:bg-white focus:outline-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed" 
-              />
-              <input 
-                name="lastName"
-                value={formData.lastName}
-                onChange={handleInputChange}
-                placeholder="Last Name *" 
-                required
-                disabled={!currentUser || submitting}
-                className="p-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-pink-400 focus:bg-white focus:outline-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed" 
+                className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-pink-400 focus:bg-white focus:outline-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               />
             </div>
-            <input 
-              name="dateOfBirth"
-              value={formData.dateOfBirth}
-              onChange={handleInputChange}
-              placeholder="Date of Birth" 
-              type="date"
-              disabled={!currentUser || submitting}
-              className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-pink-400 focus:bg-white focus:outline-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed" 
-            />
-            <input 
-              name="email"
-              value={formData.email}
-              onChange={handleInputChange}
-              placeholder="Email Address *" 
-              type="email"
-              required
-              disabled={!currentUser || submitting}
-              className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-pink-400 focus:bg-white focus:outline-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed" 
-            />
-            <input 
-              name="phone"
-              value={formData.phone}
-              onChange={handleInputChange}
-              placeholder="Phone Number *" 
-              type="tel"
-              required
-              disabled={!currentUser || submitting}
-              className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-pink-400 focus:bg-white focus:outline-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed" 
-            />
-            <textarea 
-              name="motivation"
-              value={formData.motivation}
-              onChange={handleInputChange}
-              placeholder="Why do you want to volunteer with us? *" 
-              rows="4"
-              required
-              disabled={!currentUser || submitting}
-              className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg resize-none focus:ring-2 focus:ring-pink-400 focus:bg-white focus:outline-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed" 
-            />
+
+            {}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Why do you want to volunteer with us? *
+              </label>
+              <textarea 
+                name="motivation"
+                value={formData.motivation}
+                onChange={handleInputChange}
+                placeholder="Share your motivation for volunteering" 
+                rows="4"
+                required
+                disabled={!currentUser || submitting}
+                className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg resize-none focus:ring-2 focus:ring-pink-400 focus:bg-white focus:outline-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed" 
+              />
+            </div>
             
             <button 
               type="submit"

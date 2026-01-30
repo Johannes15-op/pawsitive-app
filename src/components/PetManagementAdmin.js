@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { PawPrint, Edit2, Trash2, Eye, Search, Filter, Plus, X, Check, AlertCircle } from 'lucide-react';
+import { PawPrint, Edit2, Trash2, Eye, Search, Plus, X, AlertCircle, FileText } from 'lucide-react';
 import { collection, getDocs, doc, updateDoc, deleteDoc, query, orderBy } from 'firebase/firestore';
 import { ref, deleteObject } from 'firebase/storage';
 import { db, storage } from '../config/firebaseConfig';
-
 
 const PetManagementAdmin = ({ setCurrentScreen }) => {
   const [pets, setPets] = useState([]);
@@ -62,11 +61,9 @@ const PetManagementAdmin = ({ setCurrentScreen }) => {
       );
     }
 
-
     if (filterStatus !== 'all') {
       filtered = filtered.filter(pet => pet.status === filterStatus);
     }
-
 
     if (filterType !== 'all') {
       filtered = filtered.filter(pet => pet.type === filterType);
@@ -87,6 +84,7 @@ const PetManagementAdmin = ({ setCurrentScreen }) => {
       color: pet.color || '',
       description: pet.description || '',
       healthStatus: pet.healthStatus || '',
+      medicalRecord: pet.medicalRecord || '',
       vaccinated: pet.vaccinated || false,
       neutered: pet.neutered || false,
       status: pet.status || 'available',
@@ -107,7 +105,6 @@ const PetManagementAdmin = ({ setCurrentScreen }) => {
         updatedAt: new Date()
       });
 
-    
       setPets(pets.map(pet => 
         pet.id === selectedPet.id 
           ? { ...pet, ...editFormData, updatedAt: new Date() }
@@ -130,10 +127,8 @@ const PetManagementAdmin = ({ setCurrentScreen }) => {
     try {
       setUpdating(true);
 
-      
       await deleteDoc(doc(db, 'pets', selectedPet.id));
 
-     
       if (selectedPet.imageUrl && selectedPet.imageUrl.includes('firebasestorage')) {
         try {
           const imageRef = ref(storage, selectedPet.imageUrl);
@@ -143,7 +138,6 @@ const PetManagementAdmin = ({ setCurrentScreen }) => {
         }
       }
 
-      
       setPets(pets.filter(pet => pet.id !== selectedPet.id));
 
       setShowDeleteModal(false);
@@ -160,7 +154,8 @@ const PetManagementAdmin = ({ setCurrentScreen }) => {
     const badges = {
       available: { color: 'bg-green-100 text-green-700', text: '✅ Available' },
       pending: { color: 'bg-yellow-100 text-yellow-700', text: '⏳ Pending' },
-      adopted: { color: 'bg-purple-100 text-purple-700', text: '🏠 Adopted' }
+      adopted: { color: 'bg-purple-100 text-purple-700', text: '🏠 Adopted' },
+      undertreatment: { color: 'bg-orange-100 text-orange-700', text: '🏥 Under Treatment' }
     };
     const badge = badges[status] || badges.available;
     return (
@@ -184,172 +179,233 @@ const PetManagementAdmin = ({ setCurrentScreen }) => {
     }
   };
 
-
   const EditModal = () => (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-      <div className="bg-white rounded-2xl p-6 max-w-2xl w-full my-8">
+      <div className="bg-white rounded-2xl p-6 max-w-3xl w-full my-8">
         <div className="flex justify-between items-center mb-6">
-          <h3 className="text-2xl font-bold text-gray-800">Edit Pet</h3>
+          <h3 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+            <Edit2 size={24} className="text-pink-500" />
+            Edit Pet Information
+          </h3>
           <button onClick={() => setShowEditModal(false)} className="text-gray-500 hover:text-gray-700">
             <X size={24} />
           </button>
         </div>
 
-        <div className="space-y-4 max-h-[60vh] overflow-y-auto">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Pet Name</label>
-              <input
-                type="text"
-                value={editFormData.name}
-                onChange={(e) => setEditFormData({...editFormData, name: e.target.value})}
-                className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
-              />
-            </div>
+        <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
+          {}
+          <div className="bg-blue-50 rounded-lg p-4">
+            <h4 className="font-bold text-blue-900 mb-3 flex items-center gap-2">
+              <PawPrint size={18} />
+              Basic Information
+            </h4>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Pet Name *</label>
+                <input
+                  type="text"
+                  value={editFormData.name}
+                  onChange={(e) => setEditFormData({...editFormData, name: e.target.value})}
+                  className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
+                  required
+                />
+              </div>
 
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Type</label>
-              <select
-                value={editFormData.type}
-                onChange={(e) => setEditFormData({...editFormData, type: e.target.value})}
-                className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
-              >
-                <option value="dog">Dog</option>
-                <option value="cat">Cat</option>
-              </select>
-            </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Type *</label>
+                <select
+                  value={editFormData.type}
+                  onChange={(e) => setEditFormData({...editFormData, type: e.target.value})}
+                  className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
+                >
+                  <option value="dog">Dog</option>
+                  <option value="cat">Cat</option>
+                </select>
+              </div>
 
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Breed</label>
-              <input
-                type="text"
-                value={editFormData.breed}
-                onChange={(e) => setEditFormData({...editFormData, breed: e.target.value})}
-                className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
-              />
-            </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Breed</label>
+                <input
+                  type="text"
+                  value={editFormData.breed}
+                  onChange={(e) => setEditFormData({...editFormData, breed: e.target.value})}
+                  className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
+                />
+              </div>
 
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Age</label>
-              <input
-                type="text"
-                value={editFormData.age}
-                onChange={(e) => setEditFormData({...editFormData, age: e.target.value})}
-                className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
-              />
-            </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Age</label>
+                <input
+                  type="text"
+                  value={editFormData.age}
+                  onChange={(e) => setEditFormData({...editFormData, age: e.target.value})}
+                  placeholder="e.g., 2 years old"
+                  className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
+                />
+              </div>
 
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Gender</label>
-              <select
-                value={editFormData.gender}
-                onChange={(e) => setEditFormData({...editFormData, gender: e.target.value})}
-                className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
-              >
-                <option value="male">Male</option>
-                <option value="female">Female</option>
-              </select>
-            </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Gender *</label>
+                <select
+                  value={editFormData.gender}
+                  onChange={(e) => setEditFormData({...editFormData, gender: e.target.value})}
+                  className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
+                >
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                </select>
+              </div>
 
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Size</label>
-              <select
-                value={editFormData.size}
-                onChange={(e) => setEditFormData({...editFormData, size: e.target.value})}
-                className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
-              >
-                <option value="small">Small</option>
-                <option value="medium">Medium</option>
-                <option value="large">Large</option>
-              </select>
-            </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Size</label>
+                <select
+                  value={editFormData.size}
+                  onChange={(e) => setEditFormData({...editFormData, size: e.target.value})}
+                  className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
+                >
+                  <option value="small">Small</option>
+                  <option value="medium">Medium</option>
+                  <option value="large">Large</option>
+                </select>
+              </div>
 
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Color</label>
-              <input
-                type="text"
-                value={editFormData.color}
-                onChange={(e) => setEditFormData({...editFormData, color: e.target.value})}
-                className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
-              />
-            </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Color</label>
+                <input
+                  type="text"
+                  value={editFormData.color}
+                  onChange={(e) => setEditFormData({...editFormData, color: e.target.value})}
+                  className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
+                />
+              </div>
 
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Status</label>
-              <select
-                value={editFormData.status}
-                onChange={(e) => setEditFormData({...editFormData, status: e.target.value})}
-                className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
-              >
-                <option value="available">Available</option>
-                <option value="pending">Pending</option>
-                <option value="adopted">Adopted</option>
-              </select>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Status *</label>
+                <select
+                  value={editFormData.status}
+                  onChange={(e) => setEditFormData({...editFormData, status: e.target.value})}
+                  className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
+                >
+                  <option value="undertreatment">🏥 Under Treatment</option>
+                  <option value="available">✅ Available for Adoption</option>
+                  <option value="pending">⏳ Pending</option>
+                  <option value="adopted">🏠 Adopted</option>
+                </select>
+              </div>
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">Description</label>
+          {}
+          <div className="bg-purple-50 rounded-lg p-4">
+            <h4 className="font-bold text-purple-900 mb-3">Description</h4>
             <textarea
               value={editFormData.description}
               onChange={(e) => setEditFormData({...editFormData, description: e.target.value})}
               rows={3}
+              placeholder="Describe the pet's personality, behavior, and special characteristics..."
               className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">Health Status</label>
+          {}
+          <div className="bg-green-50 rounded-lg p-4">
+            <h4 className="font-bold text-green-900 mb-3 flex items-center gap-2">
+              <FileText size={18} />
+              Health & Medical Information
+            </h4>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Current Health Status</label>
+                <input
+                  type="text"
+                  value={editFormData.healthStatus}
+                  onChange={(e) => setEditFormData({...editFormData, healthStatus: e.target.value})}
+                  placeholder="e.g., Healthy, Recovering from injury, etc."
+                  className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Medical Records & History
+                </label>
+                <textarea
+                  value={editFormData.medicalRecord}
+                  onChange={(e) => setEditFormData({...editFormData, medicalRecord: e.target.value})}
+                  rows={5}
+                  placeholder="Enter detailed medical history including:
+• Vaccination records (dates and types)
+• Previous illnesses or injuries
+• Surgeries performed
+• Current medications
+• Allergies
+• Vet visit dates and reasons
+• Treatment plans
+• Any ongoing medical conditions"
+                  className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 text-sm"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  💡 Tip: Keep this updated with each vet visit or medical event
+                </p>
+              </div>
+
+              <div className="flex items-center space-x-6 pt-2">
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={editFormData.vaccinated}
+                    onChange={(e) => setEditFormData({...editFormData, vaccinated: e.target.checked})}
+                    className="w-5 h-5 text-green-600 rounded focus:ring-2 focus:ring-green-500"
+                  />
+                  <span className="text-sm font-medium text-gray-700">✓ Vaccinated</span>
+                </label>
+
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={editFormData.neutered}
+                    onChange={(e) => setEditFormData({...editFormData, neutered: e.target.checked})}
+                    className="w-5 h-5 text-purple-600 rounded focus:ring-2 focus:ring-purple-500"
+                  />
+                  <span className="text-sm font-medium text-gray-700">✓ Spayed/Neutered</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          {}
+          <div className="bg-yellow-50 rounded-lg p-4">
+            <h4 className="font-bold text-yellow-900 mb-3">Location</h4>
             <input
               type="text"
-              value={editFormData.healthStatus}
-              onChange={(e) => setEditFormData({...editFormData, healthStatus: e.target.value})}
+              value={editFormData.location}
+              onChange={(e) => setEditFormData({...editFormData, location: e.target.value})}
+              placeholder="Current location or shelter"
               className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
             />
-          </div>
-
-          <div className="flex items-center space-x-6">
-            <label className="flex items-center space-x-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={editFormData.vaccinated}
-                onChange={(e) => setEditFormData({...editFormData, vaccinated: e.target.checked})}
-                className="w-5 h-5 text-blue-600"
-              />
-              <span className="text-sm font-medium">Vaccinated</span>
-            </label>
-
-            <label className="flex items-center space-x-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={editFormData.neutered}
-                onChange={(e) => setEditFormData({...editFormData, neutered: e.target.checked})}
-                className="w-5 h-5 text-purple-600"
-              />
-              <span className="text-sm font-medium">Spayed/Neutered</span>
-            </label>
           </div>
         </div>
 
+        {}
         <div className="flex space-x-3 mt-6 pt-4 border-t">
           <button
             onClick={() => setShowEditModal(false)}
-            className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-300"
+            className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-300 transition-colors"
           >
             Cancel
           </button>
           <button
             onClick={handleUpdatePet}
             disabled={updating}
-            className="flex-1 bg-gradient-to-r from-pink-500 to-purple-500 text-white py-3 rounded-lg font-semibold hover:shadow-lg disabled:opacity-50"
+            className="flex-1 bg-gradient-to-r from-pink-500 to-purple-500 text-white py-3 rounded-lg font-semibold hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {updating ? 'Updating...' : 'Update Pet'}
+            {updating ? 'Updating...' : '💾 Save Changes'}
           </button>
         </div>
       </div>
     </div>
   );
-
 
   const DeleteModal = () => (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -383,10 +439,9 @@ const PetManagementAdmin = ({ setCurrentScreen }) => {
     </div>
   );
 
- 
   const ViewModal = () => (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-      <div className="bg-white rounded-2xl p-6 max-w-2xl w-full my-8">
+      <div className="bg-white rounded-2xl p-6 max-w-3xl w-full my-8">
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-2xl font-bold text-gray-800">Pet Details</h3>
           <button onClick={() => setShowViewModal(false)} className="text-gray-500 hover:text-gray-700">
@@ -395,84 +450,133 @@ const PetManagementAdmin = ({ setCurrentScreen }) => {
         </div>
 
         {selectedPet && (
-          <div className="space-y-4">
+          <div className="space-y-6">
             <div className="flex justify-center mb-4">
               <img 
                 src={selectedPet.imageUrl} 
                 alt={selectedPet.name}
-                className="w-64 h-64 object-cover rounded-lg"
+                className="w-64 h-64 object-cover rounded-lg shadow-md"
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-semibold text-gray-500">Name</label>
-                <p className="text-lg text-gray-800">{selectedPet.name}</p>
-              </div>
-              <div>
-                <label className="text-sm font-semibold text-gray-500">Type</label>
-                <p className="text-lg text-gray-800 capitalize">{selectedPet.type}</p>
-              </div>
-              <div>
-                <label className="text-sm font-semibold text-gray-500">Breed</label>
-                <p className="text-lg text-gray-800">{selectedPet.breed}</p>
-              </div>
-              <div>
-                <label className="text-sm font-semibold text-gray-500">Age</label>
-                <p className="text-lg text-gray-800">{selectedPet.age}</p>
-              </div>
-              <div>
-                <label className="text-sm font-semibold text-gray-500">Gender</label>
-                <p className="text-lg text-gray-800 capitalize">{selectedPet.gender}</p>
-              </div>
-              <div>
-                <label className="text-sm font-semibold text-gray-500">Size</label>
-                <p className="text-lg text-gray-800 capitalize">{selectedPet.size}</p>
-              </div>
-              <div>
-                <label className="text-sm font-semibold text-gray-500">Color</label>
-                <p className="text-lg text-gray-800">{selectedPet.color}</p>
-              </div>
-              <div>
-                <label className="text-sm font-semibold text-gray-500">Status</label>
-                <div className="mt-1">{getStatusBadge(selectedPet.status)}</div>
-              </div>
-            </div>
-
-            <div>
-              <label className="text-sm font-semibold text-gray-500">Description</label>
-              <p className="text-gray-800">{selectedPet.description || 'N/A'}</p>
-            </div>
-
-            <div>
-              <label className="text-sm font-semibold text-gray-500">Health Status</label>
-              <p className="text-gray-800">{selectedPet.healthStatus || 'N/A'}</p>
-            </div>
-
-            <div className="flex space-x-4">
-              <div>
-                <label className="text-sm font-semibold text-gray-500">Vaccinated</label>
-                <p className="text-gray-800">{selectedPet.vaccinated ? '✅ Yes' : '❌ No'}</p>
-              </div>
-              <div>
-                <label className="text-sm font-semibold text-gray-500">Spayed/Neutered</label>
-                <p className="text-gray-800">{selectedPet.neutered ? '✅ Yes' : '❌ No'}</p>
+            {}
+            <div className="bg-blue-50 rounded-lg p-4">
+              <h4 className="font-bold text-blue-900 mb-3">Basic Information</h4>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-semibold text-gray-500">Name</label>
+                  <p className="text-lg text-gray-800">{selectedPet.name}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-semibold text-gray-500">Type</label>
+                  <p className="text-lg text-gray-800 capitalize">{selectedPet.type}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-semibold text-gray-500">Breed</label>
+                  <p className="text-lg text-gray-800">{selectedPet.breed || 'N/A'}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-semibold text-gray-500">Age</label>
+                  <p className="text-lg text-gray-800">{selectedPet.age || 'N/A'}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-semibold text-gray-500">Gender</label>
+                  <p className="text-lg text-gray-800 capitalize">{selectedPet.gender}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-semibold text-gray-500">Size</label>
+                  <p className="text-lg text-gray-800 capitalize">{selectedPet.size || 'N/A'}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-semibold text-gray-500">Color</label>
+                  <p className="text-lg text-gray-800">{selectedPet.color || 'N/A'}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-semibold text-gray-500">Status</label>
+                  <div className="mt-1">{getStatusBadge(selectedPet.status)}</div>
+                </div>
               </div>
             </div>
 
-            <div>
-              <label className="text-sm font-semibold text-gray-500">Added On</label>
-              <p className="text-gray-800">{formatDate(selectedPet.createdAt)}</p>
+            {}
+            {selectedPet.description && (
+              <div className="bg-purple-50 rounded-lg p-4">
+                <h4 className="font-bold text-purple-900 mb-2">Description</h4>
+                <p className="text-gray-800">{selectedPet.description}</p>
+              </div>
+            )}
+
+            {}
+            <div className="bg-green-50 rounded-lg p-4">
+              <h4 className="font-bold text-green-900 mb-3 flex items-center gap-2">
+                <FileText size={18} />
+                Health & Medical Information
+              </h4>
+              
+              <div className="space-y-3">
+                <div>
+                  <label className="text-sm font-semibold text-gray-500">Current Health Status</label>
+                  <p className="text-gray-800">{selectedPet.healthStatus || 'Not specified'}</p>
+                </div>
+
+                {selectedPet.medicalRecord && (
+                  <div>
+                    <label className="text-sm font-semibold text-gray-500">Medical Records & History</label>
+                    <div className="mt-2 bg-white rounded-lg p-3 border border-green-200">
+                      <p className="text-gray-800 whitespace-pre-wrap text-sm">{selectedPet.medicalRecord}</p>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex space-x-4 pt-2">
+                  <div>
+                    <label className="text-sm font-semibold text-gray-500">Vaccinated</label>
+                    <p className="text-gray-800">{selectedPet.vaccinated ? '✅ Yes' : '❌ No'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-semibold text-gray-500">Spayed/Neutered</label>
+                    <p className="text-gray-800">{selectedPet.neutered ? '✅ Yes' : '❌ No'}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {}
+            <div className="bg-yellow-50 rounded-lg p-4">
+              <div className="grid grid-cols-2 gap-4">
+                {selectedPet.location && (
+                  <div>
+                    <label className="text-sm font-semibold text-gray-500">Location</label>
+                    <p className="text-gray-800">{selectedPet.location}</p>
+                  </div>
+                )}
+                <div>
+                  <label className="text-sm font-semibold text-gray-500">Added On</label>
+                  <p className="text-gray-800">{formatDate(selectedPet.createdAt)}</p>
+                </div>
+              </div>
             </div>
           </div>
         )}
 
-        <button
-          onClick={() => setShowViewModal(false)}
-          className="w-full mt-6 bg-gray-200 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-300"
-        >
-          Close
-        </button>
+        <div className="flex gap-3 mt-6 pt-4 border-t">
+          <button
+            onClick={() => {
+              setShowViewModal(false);
+              handleEditClick(selectedPet);
+            }}
+            className="flex-1 bg-gradient-to-r from-pink-500 to-purple-500 text-white py-3 rounded-lg font-semibold hover:shadow-lg transition-all flex items-center justify-center gap-2"
+          >
+            <Edit2 size={18} />
+            Edit Pet
+          </button>
+          <button
+            onClick={() => setShowViewModal(false)}
+            className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-300 transition-colors"
+          >
+            Close
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -515,6 +619,7 @@ const PetManagementAdmin = ({ setCurrentScreen }) => {
             className="px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
           >
             <option value="all">All Status</option>
+            <option value="undertreatment">Under Treatment</option>
             <option value="available">Available</option>
             <option value="pending">Pending</option>
             <option value="adopted">Adopted</option>
@@ -536,7 +641,7 @@ const PetManagementAdmin = ({ setCurrentScreen }) => {
         </div>
       </div>
 
-        {}
+      {}
       <div className="p-6">
         {loading ? (
           <div className="text-center py-12">
@@ -554,7 +659,7 @@ const PetManagementAdmin = ({ setCurrentScreen }) => {
               <div key={pet.id} className="bg-white border-2 border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow">
                 <div className="relative">
                   <img 
-                    src={pet.imageUrl} 
+                    src={pet.imageUrl}
                     alt={pet.name}
                     className="w-full h-48 object-cover"
                   />
@@ -568,52 +673,52 @@ const PetManagementAdmin = ({ setCurrentScreen }) => {
                   )}
                 </div>
 
-                <div className="p-4">
-                  <div className="flex justify-between items-start mb-2">
-                    <h3 className="text-lg font-bold text-gray-800">{pet.name}</h3>
-                    <span className="text-gray-500">{pet.gender === 'male' ? '♂️' : '♀️'}</span>
-                  </div>
-                  <p className="text-sm text-gray-600 mb-3">
-                    {pet.breed} • {pet.age} • {pet.color}
-                  </p>
-                  <p className="text-xs text-gray-500 mb-4 line-clamp-2">{pet.description}</p>
-
-                  <div className="flex space-x-2">
-                    <button
-                      onClick={() => {
-                        setSelectedPet(pet);
-                        setShowViewModal(true);
-                      }}
-                      className="flex-1 bg-blue-100 text-blue-700 py-2 rounded-lg text-sm font-semibold hover:bg-blue-200 flex items-center justify-center space-x-1"
-                    >
-                      <Eye size={16} />
-                      <span>View</span>
-                    </button>
-                    <button
-                      onClick={() => handleEditClick(pet)}
-                      className="flex-1 bg-green-100 text-green-700 py-2 rounded-lg text-sm font-semibold hover:bg-green-200 flex items-center justify-center space-x-1"
-                    >
-                      <Edit2 size={16} />
-                      <span>Edit</span>
-                    </button>
-                    <button
-                      onClick={() => {
-                        setSelectedPet(pet);
-                        setShowDeleteModal(true);
-                      }}
-                      className="flex-1 bg-red-100 text-red-700 py-2 rounded-lg text-sm font-semibold hover:bg-red-200 flex items-center justify-center space-x-1"
-                    >
-                      <Trash2 size={16} />
-                      <span>Delete</span>
-                    </button>
-                  </div>
-                </div>
+               <div className="p-4">
+              <div className="flex justify-between items-start mb-2">
+                <h3 className="text-lg font-bold text-gray-800">{pet.name}</h3>
+                <span className="text-gray-500">{pet.gender === 'male' ? '♂️' : '♀️'}</span>
               </div>
-            ))}
+              <p className="text-sm text-gray-600 mb-3">
+                {pet.breed || 'Mixed'} • {pet.age || 'Unknown'} • {pet.color || 'N/A'}
+              </p>
+              <p className="text-xs text-gray-500 mb-4 line-clamp-2">{pet.description || 'No description available'}</p>
+
+              <div className="flex space-x-2">
+                <button
+                  onClick={() => {
+                    setSelectedPet(pet);
+                    setShowViewModal(true);
+                  }}
+                  className="flex-1 bg-blue-100 text-blue-700 py-2 rounded-lg text-sm font-semibold hover:bg-blue-200 flex items-center justify-center space-x-1"
+                >
+                  <Eye size={16} />
+                  <span>View</span>
+                </button>
+                <button
+                  onClick={() => handleEditClick(pet)}
+                  className="flex-1 bg-green-100 text-green-700 py-2 rounded-lg text-sm font-semibold hover:bg-green-200 flex items-center justify-center space-x-1"
+                >
+                  <Edit2 size={16} />
+                  <span>Edit</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setSelectedPet(pet);
+                    setShowDeleteModal(true);
+                  }}
+                  className="flex-1 bg-red-100 text-red-700 py-2 rounded-lg text-sm font-semibold hover:bg-red-200 flex items-center justify-center space-x-1"
+                >
+                  <Trash2 size={16} />
+                  <span>Delete</span>
+                </button>
+              </div>
+            </div>
           </div>
-        )}
+        ))}
       </div>
-    </div>
+    )}
+  </div>
+</div>
   );
 };
 

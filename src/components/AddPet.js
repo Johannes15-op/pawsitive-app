@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Heart, Upload, X, CheckCircle } from 'lucide-react';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { ArrowLeft, Heart, Upload, X, CheckCircle, } from 'lucide-react';
 import { collection, addDoc, serverTimestamp, getDocs } from 'firebase/firestore';
-import { db, storage } from '../config/firebaseConfig';
+import { db } from '../config/firebaseConfig';
 
 const AddPet = ({ setCurrentScreen, currentUser }) => {
   const [formData, setFormData] = useState({
@@ -15,6 +14,7 @@ const AddPet = ({ setCurrentScreen, currentUser }) => {
     color: '',
     description: '',
     healthStatus: '',
+    medicalHistory: '',
     vaccinated: false,
     neutered: false,
     status: 'available',
@@ -23,7 +23,9 @@ const AddPet = ({ setCurrentScreen, currentUser }) => {
 
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
+  const [imageBase64, setImageBase64] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [processing, setProcessing] = useState(false);
   const [errors, setErrors] = useState({});
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [successData, setSuccessData] = useState(null);
@@ -40,11 +42,47 @@ const AddPet = ({ setCurrentScreen, currentUser }) => {
     }
   };
 
-  const handleImageChange = (e) => {
+  const compressImage = (file, maxWidth = 1200, quality = 0.8) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target.result;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+
+          if (width > maxWidth) {
+            height = (height * maxWidth) / width;
+            width = maxWidth;
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+
+          canvas.toBlob(
+            (blob) => {
+              resolve(blob);
+            },
+            'image/jpeg',
+            quality
+          );
+        };
+        img.onerror = reject;
+      };
+      reader.onerror = reject;
+    });
+  };
+
+  const handleImageChange = async (e) => {
     const file = e.target.files[0];
     if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        setErrors(prev => ({ ...prev, image: 'Image size should be less than 5MB' }));
+      if (file.size > 10 * 1024 * 1024) {
+        setErrors(prev => ({ ...prev, image: 'Image size should be less than 10MB' }));
         return;
       }
 
@@ -53,20 +91,37 @@ const AddPet = ({ setCurrentScreen, currentUser }) => {
         return;
       }
 
-      setImageFile(file);
-      setErrors(prev => ({ ...prev, image: '' }));
-      
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result);
-      };
-      reader.readAsDataURL(file);
+      try {
+        setProcessing(true);
+        setErrors(prev => ({ ...prev, image: '' }));
+
+        const compressedBlob = await compressImage(file, 1200, 0.8);
+    
+        const reader = new FileReader();
+        reader.readAsDataURL(compressedBlob);
+        reader.onloadend = () => {
+          const base64String = reader.result;
+          setImageBase64(base64String);
+          setImagePreview(base64String);
+          setImageFile(file);
+          setProcessing(false);
+        };
+        reader.onerror = () => {
+          setErrors(prev => ({ ...prev, image: 'Failed to process image' }));
+          setProcessing(false);
+        };
+      } catch (err) {
+        console.error('Error processing image:', err);
+        setErrors(prev => ({ ...prev, image: 'Failed to process image. Please try again.' }));
+        setProcessing(false);
+      }
     }
   };
 
   const removeImage = () => {
     setImageFile(null);
     setImagePreview(null);
+    setImageBase64(null);
   };
 
   const validateForm = () => {
@@ -92,28 +147,12 @@ const AddPet = ({ setCurrentScreen, currentUser }) => {
       newErrors.description = 'Description is required';
     }
     
-    if (!imageFile) {
+    if (!imageBase64) {
       newErrors.image = 'Pet image is required';
     }
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  };
-
-  const uploadImageToStorage = async (file) => {
-    try {
-      const timestamp = Date.now();
-      const filename = `pets/${timestamp}_${file.name}`;
-      const storageRef = ref(storage, filename);
-      
-      await uploadBytes(storageRef, file);
-      const downloadURL = await getDownloadURL(storageRef);
-      
-      return { success: true, url: downloadURL };
-    } catch (error) {
-      console.error('Error uploading image:', error);
-      return { success: false, error: error.message };
-    }
   };
 
   const createNotificationsForAllUsers = async (petData) => {
@@ -132,8 +171,7 @@ const AddPet = ({ setCurrentScreen, currentUser }) => {
             petName: petData.name,
             petType: petData.type,
             petBreed: petData.breed,
-            petAge: petData.age,
-            petImage: petData.imageUrl
+            petAge: petData.age
           },
           read: false,
           createdAt: serverTimestamp()
@@ -160,28 +198,21 @@ const AddPet = ({ setCurrentScreen, currentUser }) => {
     setLoading(true);
     
     try {
-     
-      const uploadResult = await uploadImageToStorage(imageFile);
-      
-      if (!uploadResult.success) {
-        setErrors({ submit: 'Failed to upload image. Please try again.' });
-        setLoading(false);
-        return;
-      }
-
-      
       const petData = {
         ...formData,
-        imageUrl: uploadResult.url,
+        imageUrl: imageBase64,
+        imageFileName: imageFile?.name || 'pet-image.jpg',
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
         addedBy: currentUser?.uid || 'admin'
       };
 
+      console.log('📝 Adding pet to Firestore...');
       const docRef = await addDoc(collection(db, 'pets'), petData);
       const petId = docRef.id;
+      console.log('✅ Pet added with ID:', petId);
 
-     
+      console.log('📢 Creating notifications...');
       const notifResult = await createNotificationsForAllUsers({
         id: petId,
         ...petData
@@ -196,8 +227,9 @@ const AddPet = ({ setCurrentScreen, currentUser }) => {
       
       setShowSuccessModal(true);
     } catch (error) {
-      console.error('Error adding pet:', error);
-      setErrors({ submit: 'Failed to add pet. Please try again.' });
+      console.error('❌ Error adding pet:', error);
+      setErrors({ submit: 'Failed to add pet: ' + error.message });
+      alert('Failed to add pet: ' + error.message);
     } finally {
       setLoading(false);
     }
@@ -285,11 +317,11 @@ const AddPet = ({ setCurrentScreen, currentUser }) => {
         </div>
       </div>
 
-      {}
+     {}
       <div className="max-w-4xl mx-auto p-6">
         <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
           <div className="p-6 space-y-6">
-           {}
+         {}
             {errors.submit && (
               <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
                 <p className="text-sm">{errors.submit}</p>
@@ -306,13 +338,15 @@ const AddPet = ({ setCurrentScreen, currentUser }) => {
                 <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-pink-500 transition-all">
                   <Upload size={48} className="mx-auto text-gray-400 mb-3" />
                   <p className="text-sm text-gray-600 mb-2">Click to upload pet photo</p>
-                  <p className="text-xs text-gray-400 mb-4">PNG, JPG up to 5MB</p>
+                  <p className="text-xs text-gray-400 mb-2">PNG, JPG up to 10MB</p>
+                  <p className="text-xs text-blue-600 mb-4">📌 Image will be compressed automatically</p>
                   <label className="bg-pink-500 text-white px-4 py-2 rounded-lg font-semibold cursor-pointer hover:bg-pink-600 inline-block">
-                    Choose File
+                    {processing ? 'Processing...' : 'Choose File'}
                     <input
                       type="file"
                       accept="image/*"
                       onChange={handleImageChange}
+                      disabled={processing}
                       className="hidden"
                     />
                   </label>
@@ -326,6 +360,7 @@ const AddPet = ({ setCurrentScreen, currentUser }) => {
                   />
                   <button
                     onClick={removeImage}
+                    disabled={processing}
                     className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full hover:bg-red-600"
                   >
                     <X size={20} />
@@ -357,7 +392,7 @@ const AddPet = ({ setCurrentScreen, currentUser }) => {
                 {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
               </div>
 
-              {}
+             {}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Type <span className="text-red-500">*</span>
@@ -373,7 +408,7 @@ const AddPet = ({ setCurrentScreen, currentUser }) => {
                 </select>
               </div>
 
-             {}
+              {}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Breed <span className="text-red-500">*</span>
@@ -391,7 +426,7 @@ const AddPet = ({ setCurrentScreen, currentUser }) => {
                 {errors.breed && <p className="text-red-500 text-xs mt-1">{errors.breed}</p>}
               </div>
 
-             {}
+              {}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Age <span className="text-red-500">*</span>
@@ -409,7 +444,7 @@ const AddPet = ({ setCurrentScreen, currentUser }) => {
                 {errors.age && <p className="text-red-500 text-xs mt-1">{errors.age}</p>}
               </div>
 
-            {}
+              {}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Gender <span className="text-red-500">*</span>
@@ -425,7 +460,7 @@ const AddPet = ({ setCurrentScreen, currentUser }) => {
                 </select>
               </div>
 
-              {}
+            {}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Size <span className="text-red-500">*</span>
@@ -442,7 +477,7 @@ const AddPet = ({ setCurrentScreen, currentUser }) => {
                 </select>
               </div>
 
-             {}
+            {}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Color <span className="text-red-500">*</span>
@@ -460,7 +495,7 @@ const AddPet = ({ setCurrentScreen, currentUser }) => {
                 {errors.color && <p className="text-red-500 text-xs mt-1">{errors.color}</p>}
               </div>
 
-              {}
+             {}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Location
@@ -494,10 +529,10 @@ const AddPet = ({ setCurrentScreen, currentUser }) => {
               {errors.description && <p className="text-red-500 text-xs mt-1">{errors.description}</p>}
             </div>
 
-            {}
+           {}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Health Status
+                Current Health Status
               </label>
               <input
                 type="text"
@@ -507,6 +542,69 @@ const AddPet = ({ setCurrentScreen, currentUser }) => {
                 placeholder="e.g., Healthy, Under treatment"
                 className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
               />
+            </div>
+
+            {}
+            <div className="space-y-3">
+              <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Medical Records & History
+              </label>
+              
+              <textarea
+                name="medicalHistory"
+                value={formData.medicalHistory}
+                onChange={handleInputChange}
+                placeholder="Enter medical history, vaccinations, treatments, medications, veterinary visits, etc. Example:
+- 2024-01-15: Vaccinated (Rabies, Distemper)
+- 2024-02-20: Treated for ear infection
+- 2024-03-10: Spayed/Neutered
+- Medications: Currently on heartworm prevention"
+                rows={6}
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 resize-none font-mono text-sm"
+              />
+              
+              <p className="text-xs text-gray-500">
+                💡 Record all medical history including vaccinations, treatments, surgeries, and ongoing medications
+              </p>
+
+              {}
+              {formData.medicalHistory && (
+                <div className="mt-4 bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                    <h4 className="text-sm font-semibold text-blue-900">Preview: How This Will Appear</h4>
+                  </div>
+                  
+                  <div className="bg-white rounded-lg p-4 border border-blue-200">
+                    <div className="space-y-2">
+                      {formData.medicalHistory.split('\n').map((line, index) => {
+                        if (!line.trim()) return null;
+                        
+                      
+                        const isBullet = line.trim().startsWith('-') || line.trim().startsWith('•');
+                        const cleanLine = isBullet ? line.trim().substring(1).trim() : line.trim();
+                        
+                        return (
+                          <div key={index} className="flex items-start gap-2">
+                            {isBullet && (
+                              <span className="text-blue-600 mt-1">•</span>
+                            )}
+                            <p className="text-sm text-gray-700 leading-relaxed">
+                              {cleanLine}
+                            </p>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
            {}
@@ -556,15 +654,18 @@ const AddPet = ({ setCurrentScreen, currentUser }) => {
                 className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
               >
                 <option value="available">✅ Available for Adoption</option>
-                <option value="pending">⏳ Pending</option>
-                <option value="adopted">🏠 Adopted</option>
+                <option value="undertreatment">🏥 Under Treatment</option>
               </select>
+              <p className="text-xs text-gray-500 mt-2">
+                💡 Select "Under Treatment" for pets that need medical care before adoption. 
+                You can change this to "Available" once they're ready.
+              </p>
             </div>
 
             {}
             <div className="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded-lg">
               <p className="text-sm text-yellow-800">
-                <strong>📢 Note:</strong> All users will be notified about this new pet available for adoption.
+                <strong>📢 Note:</strong> All users will be notified about this new pet available for adoption. Medical history will help adopters understand the pet's health background.
               </p>
             </div>
           </div>
@@ -573,18 +674,19 @@ const AddPet = ({ setCurrentScreen, currentUser }) => {
           <div className="bg-gray-50 px-6 py-4 flex items-center justify-between border-t">
             <button
               onClick={handleCancel}
-              className="px-6 py-2 text-gray-600 font-medium hover:bg-gray-200 rounded-lg transition-all"
+              disabled={loading || processing}
+              className="px-6 py-2 text-gray-600 font-medium hover:bg-gray-200 rounded-lg transition-all disabled:opacity-50"
             >
               Cancel
             </button>
             
             <button
               onClick={handleSubmit}
-              disabled={loading}
+              disabled={loading || processing}
               className="bg-gradient-to-r from-orange-500 to-pink-500 text-white px-6 py-3 rounded-lg font-semibold hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
             >
               <Heart size={18} />
-              <span>{loading ? 'Adding Pet...' : 'Add Pet & Notify Users'}</span>
+              <span>{loading ? 'Adding Pet...' : processing ? 'Processing Image...' : 'Add Pet & Notify Users'}</span>
             </button>
           </div>
         </div>

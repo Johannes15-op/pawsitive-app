@@ -1,4 +1,4 @@
-import { collection, addDoc, getDocs, query, where, doc, updateDoc, deleteDoc, Timestamp, getDoc, increment } from 'firebase/firestore';
+import { collection, addDoc, getDocs, query, where, doc, updateDoc, deleteDoc, Timestamp, getDoc, increment, orderBy } from 'firebase/firestore';
 import { db } from '../config/firebaseConfig';
 import notificationService from './notificationService';
 
@@ -42,11 +42,14 @@ const kaponService = {
     }
   },
 
- 
   getAllSchedules: async () => {
     try {
       const schedulesRef = collection(db, 'kapon_schedules'); 
-      const snapshot = await getDocs(schedulesRef);
+      const q = query(
+        schedulesRef,
+        orderBy('createdAt', 'desc')
+      );
+      const snapshot = await getDocs(q);
       const data = snapshot.docs.map(doc => {
         const docData = doc.data();
         return {
@@ -73,12 +76,21 @@ const kaponService = {
     }
   },
 
- 
   getActiveSchedules: async () => {
     try {
+      console.log('🔍 Fetching active kapon schedules...');
       const schedulesRef = collection(db, 'kapon_schedules'); 
-      const q = query(schedulesRef, where('status', '==', 'active'));
+      
+
+      const q = query(
+        schedulesRef, 
+        where('status', '==', 'active')
+   
+      );
+      
       const snapshot = await getDocs(q);
+      console.log('📊 Found', snapshot.size, 'active schedules');
+      
       const data = snapshot.docs.map(doc => {
         const docData = doc.data();
         return {
@@ -91,12 +103,22 @@ const kaponService = {
           capacity: docData.capacity || 50
         };
       });
+      
+   
+      data.sort((a, b) => {
+        const dateA = a.createdAt?.toDate?.() || new Date(a.createdAt);
+        const dateB = b.createdAt?.toDate?.() || new Date(b.createdAt);
+        return dateB - dateA; 
+      });
+      
+      console.log('✅ Returning sorted schedules:', data);
+      
       return {
         success: true,
         data: data
       };
     } catch (error) {
-      console.error('Error fetching active Kapon schedules:', error);
+      console.error('❌ Error fetching active Kapon schedules:', error);
       return {
         success: false,
         data: [],
@@ -109,7 +131,6 @@ const kaponService = {
     return kaponService.getActiveSchedules();
   },
 
-  
   getPendingSchedulesCount: async () => {
     try {
       const requestsRef = collection(db, 'kapon_requests');
@@ -122,7 +143,6 @@ const kaponService = {
     }
   },
 
-  
   createKaponRequest: async (requestData) => {
     try {
       console.log('📝 Creating Kapon request:', requestData);
@@ -145,7 +165,6 @@ const kaponService = {
         createdAt: Timestamp.fromDate(new Date()),
         updatedAt: Timestamp.fromDate(new Date())
       });
-      
       
       if (requestData.scheduleId) {
         try {
@@ -176,11 +195,14 @@ const kaponService = {
     }
   },
 
- 
   getAllKaponRequests: async () => {
     try {
       const requestsRef = collection(db, 'kapon_requests');
-      const snapshot = await getDocs(requestsRef);
+      const q = query(
+        requestsRef,
+        orderBy('createdAt', 'desc')
+      );
+      const snapshot = await getDocs(q);
       return {
         success: true,
         data: snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
@@ -195,15 +217,27 @@ const kaponService = {
     }
   },
 
-  
   getUserKaponRequests: async (userId) => {
     try {
       const requestsRef = collection(db, 'kapon_requests'); 
-      const q = query(requestsRef, where('userId', '==', userId));
+
+      const q = query(
+        requestsRef, 
+        where('userId', '==', userId)
+      );
       const snapshot = await getDocs(q);
+      
+  
+      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      data.sort((a, b) => {
+        const dateA = a.createdAt?.toDate?.() || new Date(a.createdAt);
+        const dateB = b.createdAt?.toDate?.() || new Date(b.createdAt);
+        return dateB - dateA;
+      });
+      
       return {
         success: true,
-        data: snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+        data: data
       };
     } catch (error) {
       console.error('Error fetching user kapon requests:', error);
@@ -215,22 +249,30 @@ const kaponService = {
     }
   },
 
- 
   getScheduleRegistrations: async (scheduleId) => {
     try {
       const requestsRef = collection(db, 'kapon_requests'); 
-      const q = query(requestsRef, where('scheduleId', '==', scheduleId));
+  
+      const q = query(
+        requestsRef, 
+        where('scheduleId', '==', scheduleId)
+      );
       const snapshot = await getDocs(q);
+  
+      const data = snapshot.docs.map(doc => {
+        const docData = doc.data();
+        return {
+          id: doc.id,
+          ...docData,
+          createdAt: docData.createdAt?.toDate?.() || new Date(docData.createdAt)
+        };
+      });
+      
+      data.sort((a, b) => b.createdAt - a.createdAt);
+      
       return {
         success: true,
-        data: snapshot.docs.map(doc => {
-          const docData = doc.data();
-          return {
-            id: doc.id,
-            ...docData,
-            createdAt: docData.createdAt?.toDate?.() || new Date(docData.createdAt)
-          };
-        })
+        data: data
       };
     } catch (error) {
       console.error('Error fetching schedule registrations:', error);
@@ -242,7 +284,6 @@ const kaponService = {
     }
   },
 
-  
   updateScheduleStatus: async (scheduleId, newStatus, notes = '') => {
     try {
       const scheduleDoc = doc(db, 'kapon_schedules', scheduleId); 
@@ -267,14 +308,15 @@ const kaponService = {
     }
   },
 
- 
   updateRequestStatus: async (requestId, newStatus, notes = '') => {
     try {
+      console.log('🔄 Updating request status:', { requestId, newStatus, notes });
+      
       const requestDoc = doc(db, 'kapon_requests', requestId);
       
-     
       const requestSnapshot = await getDoc(requestDoc);
       if (!requestSnapshot.exists()) {
+        console.error('❌ Request not found:', requestId);
         return {
           success: false,
           error: 'Request not found'
@@ -282,49 +324,67 @@ const kaponService = {
       }
       
       const requestData = requestSnapshot.data();
+      console.log('📋 Request data:', requestData);
       
-    
       await updateDoc(requestDoc, {
         status: newStatus,
         updatedAt: Timestamp.fromDate(new Date()),
         adminNotes: notes,
         reviewedAt: Timestamp.fromDate(new Date())
       });
+      
+      console.log('✅ Request status updated in database');
 
-     
       if (requestData.userId) {
+        console.log('📬 Preparing notification for user:', requestData.userId);
+        
         let notificationTitle = '';
         let notificationMessage = '';
         let notificationType = '';
 
         if (newStatus === 'approved') {
           notificationTitle = '✅ Kapon Request Approved';
-          notificationMessage = `Your Kapon request for ${requestData.petName} has been approved!`;
+          notificationMessage = `Your Kapon request for ${requestData.petName} has been approved! Please check your email for further instructions.`;
           notificationType = 'kapon_approved';
         } else if (newStatus === 'rejected') {
           notificationTitle = '❌ Kapon Request Rejected';
-          notificationMessage = `Your Kapon request for ${requestData.petName} has been rejected. ${notes ? 'Reason: ' + notes : ''}`;
+          notificationMessage = `Your Kapon request for ${requestData.petName} has been rejected.${notes ? ' Reason: ' + notes : ''}`;
           notificationType = 'kapon_rejected';
         } else if (newStatus === 'completed') {
           notificationTitle = '🎉 Kapon Completed';
-          notificationMessage = `The Kapon procedure for ${requestData.petName} has been completed successfully!`;
+          notificationMessage = `The Kapon procedure for ${requestData.petName} has been completed successfully! Thank you for being a responsible pet owner.`;
           notificationType = 'kapon_completed';
         }
 
         if (notificationTitle) {
-          await notificationService.createNotification({
-            userId: requestData.userId,
-            type: notificationType,
-            title: notificationTitle,
-            message: notificationMessage,
-            relatedId: requestId,
-            metadata: {
-              petName: requestData.petName,
-              scheduleId: requestData.scheduleId,
-              adminNotes: notes
+          try {
+            console.log('📤 Sending notification:', { title: notificationTitle, type: notificationType });
+            
+            const notificationResult = await notificationService.createNotification({
+              userId: requestData.userId,
+              type: notificationType,
+              title: notificationTitle,
+              message: notificationMessage,
+              relatedId: requestId,
+              metadata: {
+                petName: requestData.petName,
+                scheduleId: requestData.scheduleId,
+                adminNotes: notes,
+                status: newStatus
+              }
+            });
+            
+            if (notificationResult.success) {
+              console.log('✅ Notification sent successfully');
+            } else {
+              console.error('❌ Failed to send notification:', notificationResult.error);
             }
-          });
+          } catch (notifError) {
+            console.error('❌ Error sending notification:', notifError);
+          }
         }
+      } else {
+        console.warn('⚠️ No userId found for request, skipping notification');
       }
 
       return {
@@ -332,7 +392,7 @@ const kaponService = {
         message: `Request ${newStatus} successfully`
       };
     } catch (error) {
-      console.error('Error updating request status:', error);
+      console.error('❌ Error updating request status:', error);
       return {
         success: false,
         error: error.message
@@ -340,7 +400,6 @@ const kaponService = {
     }
   },
 
-  
   deleteSchedule: async (scheduleId) => {
     try {
       await deleteDoc(doc(db, 'kapon_schedules', scheduleId)); 

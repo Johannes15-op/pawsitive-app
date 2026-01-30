@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { UserCheck, UserX, Clock, CheckCircle, XCircle, Search } from 'lucide-react';
+import { UserCheck, UserX, Clock, CheckCircle, XCircle, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import volunteerService from '../services/volunteerService';
 
 const VolunteerRequestsAdmin = ({ setCurrentScreen }) => {
@@ -8,10 +8,16 @@ const VolunteerRequestsAdmin = ({ setCurrentScreen }) => {
   const [filter, setFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [processingId, setProcessingId] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 3; 
 
   useEffect(() => {
     loadApplications();
   }, []);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filter, searchTerm]);
 
   const loadApplications = async () => {
     setLoading(true);
@@ -60,7 +66,13 @@ const VolunteerRequestsAdmin = ({ setCurrentScreen }) => {
     }
   };
 
-  const filteredApplications = applications.filter(app => {
+  const sortedApplications = [...applications].sort((a, b) => {
+    const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt);
+    const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt);
+    return dateB - dateA; 
+  });
+
+  const filteredApplications = sortedApplications.filter(app => {
     const matchesFilter = filter === 'all' || app.status === filter;
     const matchesSearch = 
       (app.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -69,6 +81,23 @@ const VolunteerRequestsAdmin = ({ setCurrentScreen }) => {
     
     return matchesFilter && matchesSearch;
   });
+
+  const totalPages = Math.ceil(filteredApplications.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentApplications = filteredApplications.slice(startIndex, endIndex);
+
+  const handlePageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      setCurrentPage(newPage);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  const handleFilterChange = (newFilter) => {
+    setFilter(newFilter);
+    setCurrentPage(1);
+  };
 
   const getStatusBadge = (status) => {
     const badges = {
@@ -95,6 +124,41 @@ const VolunteerRequestsAdmin = ({ setCurrentScreen }) => {
     rejected: applications.filter(a => a.status === 'rejected').length
   };
 
+  const getPageNumbers = () => {
+    const pages = [];
+    const maxVisible = 5;
+    
+    if (totalPages <= maxVisible) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      if (currentPage <= 3) {
+        for (let i = 1; i <= 4; i++) {
+          pages.push(i);
+        }
+        pages.push('...');
+        pages.push(totalPages);
+      } else if (currentPage >= totalPages - 2) {
+        pages.push(1);
+        pages.push('...');
+        for (let i = totalPages - 3; i <= totalPages; i++) {
+          pages.push(i);
+        }
+      } else {
+        pages.push(1);
+        pages.push('...');
+        for (let i = currentPage - 1; i <= currentPage + 1; i++) {
+          pages.push(i);
+        }
+        pages.push('...');
+        pages.push(totalPages);
+      }
+    }
+    
+    return pages;
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -112,21 +176,53 @@ const VolunteerRequestsAdmin = ({ setCurrentScreen }) => {
 
       {}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-6">
-        <div className="bg-white rounded-lg shadow-md p-4">
+        <div 
+          onClick={() => handleFilterChange('all')}
+          className={`bg-white rounded-lg shadow-md p-4 cursor-pointer transition-all ${
+            filter === 'all' ? 'ring-2 ring-pink-500 shadow-lg' : 'hover:shadow-lg'
+          }`}
+        >
           <div className="text-xs md:text-sm text-gray-600 mb-1">Total</div>
           <div className="text-xl md:text-2xl font-bold text-gray-800">{stats.total}</div>
+          {filter === 'all' && totalPages > 1 && (
+            <div className="text-xs text-gray-500 mt-1">{totalPages} pages</div>
+          )}
         </div>
-        <div className="bg-yellow-50 rounded-lg shadow-md p-4">
+        <div 
+          onClick={() => handleFilterChange('pending')}
+          className={`bg-yellow-50 rounded-lg shadow-md p-4 cursor-pointer transition-all ${
+            filter === 'pending' ? 'ring-2 ring-yellow-500 shadow-lg' : 'hover:shadow-lg'
+          }`}
+        >
           <div className="text-xs md:text-sm text-yellow-700 mb-1">Pending</div>
           <div className="text-xl md:text-2xl font-bold text-yellow-800">{stats.pending}</div>
+          {filter === 'pending' && totalPages > 1 && (
+            <div className="text-xs text-yellow-600 mt-1">{totalPages} pages</div>
+          )}
         </div>
-        <div className="bg-green-50 rounded-lg shadow-md p-4">
+        <div 
+          onClick={() => handleFilterChange('approved')}
+          className={`bg-green-50 rounded-lg shadow-md p-4 cursor-pointer transition-all ${
+            filter === 'approved' ? 'ring-2 ring-green-500 shadow-lg' : 'hover:shadow-lg'
+          }`}
+        >
           <div className="text-xs md:text-sm text-green-700 mb-1">Approved</div>
           <div className="text-xl md:text-2xl font-bold text-green-800">{stats.approved}</div>
+          {filter === 'approved' && totalPages > 1 && (
+            <div className="text-xs text-green-600 mt-1">{totalPages} pages</div>
+          )}
         </div>
-        <div className="bg-red-50 rounded-lg shadow-md p-4">
+        <div 
+          onClick={() => handleFilterChange('rejected')}
+          className={`bg-red-50 rounded-lg shadow-md p-4 cursor-pointer transition-all ${
+            filter === 'rejected' ? 'ring-2 ring-red-500 shadow-lg' : 'hover:shadow-lg'
+          }`}
+        >
           <div className="text-xs md:text-sm text-red-700 mb-1">Rejected</div>
           <div className="text-xl md:text-2xl font-bold text-red-800">{stats.rejected}</div>
+          {filter === 'rejected' && totalPages > 1 && (
+            <div className="text-xs text-red-600 mt-1">{totalPages} pages</div>
+          )}
         </div>
       </div>
 
@@ -138,7 +234,7 @@ const VolunteerRequestsAdmin = ({ setCurrentScreen }) => {
             {['all', 'pending', 'approved', 'rejected'].map(status => (
               <button
                 key={status}
-                onClick={() => setFilter(status)}
+                onClick={() => handleFilterChange(status)}
                 className={`px-3 md:px-4 py-2 rounded-lg font-medium text-sm md:text-base transition-colors whitespace-nowrap ${
                   filter === status
                     ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white'
@@ -165,13 +261,34 @@ const VolunteerRequestsAdmin = ({ setCurrentScreen }) => {
       </div>
 
       {}
-      <div className="space-y-4">
-        {filteredApplications.length === 0 ? (
+      <div className="mb-4 bg-white rounded-lg shadow-sm p-3">
+        <div className="flex items-center justify-between text-sm">
+          <span className="text-gray-600">
+            Showing {filteredApplications.length === 0 ? 0 : startIndex + 1}-{Math.min(endIndex, filteredApplications.length)} of {filteredApplications.length} applications
+          </span>
+          {totalPages > 1 && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-gray-500">
+                Page {currentPage} of {totalPages}
+              </span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {}
+      <div className="space-y-4 mb-6">
+        {currentApplications.length === 0 ? (
           <div className="bg-white rounded-xl shadow-md p-8 text-center">
-            <p className="text-gray-500">No applications found</p>
+            <p className="text-gray-500">
+              {searchTerm 
+                ? `No applications found matching "${searchTerm}"`
+                : `No ${filter === 'all' ? '' : filter} applications found`
+              }
+            </p>
           </div>
         ) : (
-          filteredApplications.map((application) => (
+          currentApplications.map((application) => (
             <div key={application.id} className="bg-white rounded-xl shadow-md p-4 md:p-6 hover:shadow-lg transition-shadow">
               <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-4">
                 <div className="flex-1 min-w-0">
@@ -183,20 +300,60 @@ const VolunteerRequestsAdmin = ({ setCurrentScreen }) => {
                   </div>
                   <div className="text-xs md:text-sm text-gray-600 space-y-0.5">
                     <p className="break-all">📧 {application.email}</p>
-                    <p>📱 {application.phone}</p>
-                    <p>🎂 {application.dateOfBirth}</p>
+                    {application.phone && <p>📱 {application.phone}</p>}
+                    {application.dateOfBirth && <p>🎂 {application.dateOfBirth}</p>}
                     <p className="text-xs text-gray-500">Applied: {formatDate(application.createdAt)}</p>
                   </div>
                 </div>
               </div>
 
               {}
-              <div className="bg-gray-50 rounded-lg p-3 md:p-4 mb-4">
-                <h4 className="font-semibold text-gray-700 mb-2 text-sm md:text-base">Why they want to volunteer:</h4>
-                <p className="text-gray-600 text-xs md:text-sm leading-relaxed">{application.motivation}</p>
+              <div className="space-y-3 mb-4">
+                {}
+                <div className="bg-blue-50 rounded-lg p-3">
+                  <div className="flex items-start gap-2">
+                    <span className="text-sm font-semibold text-blue-800">
+                      {application.hasVolunteerExperience === 'yes' ? '✓' : '☐'} Previous volunteer experience:
+                    </span>
+                    <span className={`text-sm font-medium ${application.hasVolunteerExperience === 'yes' ? 'text-blue-900' : 'text-gray-600'}`}>
+                      {application.hasVolunteerExperience === 'yes' ? 'Yes' : application.hasVolunteerExperience === 'no' ? 'No' : 'Not specified'}
+                    </span>
+                  </div>
+                  {application.hasVolunteerExperience === 'yes' && application.volunteerExperienceDescription && (
+                    <div className="mt-2 pl-6">
+                      <p className="text-xs text-gray-700 italic">"{application.volunteerExperienceDescription}"</p>
+                    </div>
+                  )}
+                </div>
+
+                {}
+                <div className="bg-green-50 rounded-lg p-3">
+                  <div className="flex items-start gap-2">
+                    <span className="text-sm font-semibold text-green-800">
+                      {application.hasAnimalExperience === 'yes' ? '✓' : '☐'} Experience handling animals:
+                    </span>
+                    <span className={`text-sm font-medium ${application.hasAnimalExperience === 'yes' ? 'text-green-900' : 'text-gray-600'}`}>
+                      {application.hasAnimalExperience === 'yes' ? 'Yes' : application.hasAnimalExperience === 'no' ? 'No' : 'Not specified'}
+                    </span>
+                  </div>
+                </div>
+
+                {}
+                {application.specialSkills && (
+                  <div className="bg-purple-50 rounded-lg p-3">
+                    <p className="text-sm font-semibold text-purple-800 mb-1">Special skills:</p>
+                    <p className="text-xs md:text-sm text-purple-900">{application.specialSkills}</p>
+                  </div>
+                )}
+
+                {}
+                <div className="bg-gray-50 rounded-lg p-3 md:p-4">
+                  <h4 className="font-semibold text-gray-700 mb-2 text-sm md:text-base">Why they want to volunteer:</h4>
+                  <p className="text-gray-600 text-xs md:text-sm leading-relaxed">{application.motivation}</p>
+                </div>
               </div>
 
-             {}
+              {}
               {application.status === 'pending' && (
                 <div className="flex flex-col sm:flex-row gap-3">
                   <button
@@ -227,6 +384,58 @@ const VolunteerRequestsAdmin = ({ setCurrentScreen }) => {
           ))
         )}
       </div>
+
+      {}
+      {totalPages > 1 && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white rounded-xl shadow-md p-4">
+          <div className="text-sm text-gray-600">
+            Page {currentPage} of {totalPages}
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+              className="px-3 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1"
+            >
+              <ChevronLeft size={18} />
+              <span className="hidden sm:inline">Previous</span>
+            </button>
+            
+            {}
+            <div className="flex gap-1">
+              {getPageNumbers().map((pageNum, idx) => {
+                if (pageNum === '...') {
+                  return <span key={`ellipsis-${idx}`} className="px-2 py-2 text-gray-500">...</span>;
+                }
+                
+                return (
+                  <button
+                    key={pageNum}
+                    onClick={() => handlePageChange(pageNum)}
+                    className={`w-10 h-10 rounded-lg font-medium transition-colors ${
+                      currentPage === pageNum
+                        ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    {pageNum}
+                  </button>
+                );
+              })}
+            </div>
+            
+            <button
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              className="px-3 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1"
+            >
+              <span className="hidden sm:inline">Next</span>
+              <ChevronRight size={18} />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
